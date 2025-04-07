@@ -1,0 +1,37 @@
+[
+  {
+    "date": "2025-04-07",
+    "player1": "Piyush",
+    "player2": "Nihar",
+    "score1": 11,
+    "score2": 4
+  },
+  {
+    "date": "2025-04-07",
+    "player1": "Piyush",
+    "player2": "Ishan",
+    "score1": 11,
+    "score2": 8
+  },
+  {
+    "date": "2025-04-07",
+    "player1": "Ishan",
+    "player2": "Nihar",
+    "score1": 11,
+    "score2": 5
+  },
+  {
+    "date": "2025-04-07",
+    "player1": "Nihar",
+    "player2": "Piyush",
+    "score1": 11,
+    "score2": 9
+  },
+  {
+    "date": "2025-04-07",
+    "player1": "Piyush",
+    "player2": "Ishan",
+    "score1": 11,
+    "score2": 6
+  }
+]
