@@ -33,5 +33,82 @@
     "player2": "Ishan",
     "score1": 11,
     "score2": 6
-  }
+  },
+  {
+    "date": "2025-04-09",
+    "player1": "Piyush",
+    "player2": "Nihar",
+    "score1": 11,
+    "score2": 4
+  },
+  {
+    "date": "2025-04-09",
+    "player1": "Piyush",
+    "player2": "Nihar",
+    "score1": 2,
+    "score2": 11
+  },
+  {
+    "date": "2025-04-09",
+    "player1": "Piyush",
+    "player2": "Nihar",
+    "score1": 11,
+    "score2": 5
+  },
+  {
+    "date": "2025-04-09",
+    "player1": "Piyush",
+    "player2": "Nihar",
+    "score1": 11,
+    "score2": 6
+  },
+  {
+    "date": "2025-04-09",
+    "player1": "Piyush",
+    "player2": "Nihar",
+    "score1": 11,
+    "score2": 5
+  },
+  {
+    "date": "2025-04-11",
+    "player1": "Arora",
+    "player2": "Ameta",
+    "score1": 4,
+    "score2": 11
+  },
+  {
+    "date": "2025-04-11",
+    "player1": "Arora",
+    "player2": "Ameta",
+    "score1": 11,
+    "score2": 5
+  },
+  {
+    "date": "2025-04-11",
+    "player1": "Arora",
+    "player2": "Ameta",
+    "score1": 11,
+    "score2": 0
+  },
+  {
+    "date": "2025-04-11",
+    "player1": "Arora",
+    "player2": "Ameta",
+    "score1": 11,
+    "score2": 5
+  },
+  {
+    "date": "2025-04-11",
+    "player1": "Arora",
+    "player2": "Ameta",
+    "score1": 11,
+    "score2": 0
+  },
+  {
+    "date": "2025-04-11",
+    "player1": "Arora",
+    "player2": "Ameta",
+    "score1": 11,
+    "score2": 5
+  },
 ]
