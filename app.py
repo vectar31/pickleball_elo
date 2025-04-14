@@ -5,11 +5,23 @@ import seaborn as sns
 from elo import load_players, compute_ratings_and_history, add_match
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
+def sort_with_promoter_last(df, sort_by, ascending=False):
+    df_sorted = df.sort_values(by=sort_by, ascending=ascending)
+    if "Piyush" in df_sorted["Player"].values:
+        piyush_row = df_sorted[df_sorted["Player"] == "Piyush"]
+        df_sorted = df_sorted[df_sorted["Player"] != "Piyush"]
+        df_sorted = pd.concat([df_sorted, piyush_row], ignore_index=True)
+    return df_sorted
 
 st.set_page_config(page_title="Pickleball Elo Ratings", layout="wide")
 st.title("🏓 Pickleball Elo Tracker")
 
 ratings, history, matches = compute_ratings_and_history()
+# Set of players who have played at least one match
+active_players = set()
+for match in matches:
+    active_players.update([match["player1"], match["player2"]])
+
 players = sorted(load_players())
 
 # Sidebar: Match Entry
@@ -34,8 +46,10 @@ if st.sidebar.button("Submit Match"):
 
 # Ratings Table
 st.header("📊 Current Elo Ratings")
-df = pd.DataFrame(ratings.items(), columns=["Player", "Rating"])
-df = df.sort_values(by="Rating", ascending=False).reset_index(drop=True)
+df = pd.DataFrame([
+    (p, ratings[p]) for p in ratings if p in active_players
+], columns=["Player", "Rating"])
+df = sort_with_promoter_last(df, "Rating", ascending=False).reset_index(drop=True)
 st.dataframe(df.style.format({"Rating": "{:.2f}"}), use_container_width=True)
 
 # Graph
@@ -49,8 +63,11 @@ st.header("📈 Elo Progress Over Matches")
 # Convert history to long-form DataFrame for seaborn
 graph_data = []
 for player, series in history.items():
+    if player not in active_players:
+        continue
     for match_num, rating in series:
         graph_data.append({"Player": player, "Match #": match_num, "Elo Rating": rating})
+
 
 graph_df = pd.DataFrame(graph_data)
 
@@ -153,10 +170,11 @@ df_power = pd.DataFrame([
         "Power Ranking": compute_power_ranking(ratings[player], streak),
         "Tier": elo_tier_classification(ratings[player])
     }
-    for player, streak in streaks.items()
+    for player, streak in streaks.items() if player in active_players
 ])
 
-df_power = df_power.sort_values(by="Power Ranking", ascending=False).reset_index(drop=True)
+
+df_power = sort_with_promoter_last(df_power, "Power Ranking", ascending=False).reset_index(drop=True)
 
 st.dataframe(df_power.style.format({
     "Elo Rating": "{:.2f}",
@@ -224,6 +242,8 @@ for match in matches:
 # Calculate additional stats
 processed_stats = []
 for player, data in stats.items():
+    if player not in active_players:
+        continue
     total_mathches = data["Wins"] + data["Losses"]
     wins = data["Wins"]
     losses = data["Losses"]
@@ -273,7 +293,7 @@ for player, data in stats.items():
 
 # Display as DataFrame
 stats_df = pd.DataFrame(processed_stats)
-stats_df = stats_df.sort_values(by="Wins", ascending=False).reset_index(drop=True)
+stats_df = sort_with_promoter_last(stats_df, "Wins", ascending=False).reset_index(drop=True)
 st.dataframe(stats_df, use_container_width=True)
 
 
@@ -283,7 +303,7 @@ st.header("🤜🤛 Head-to-Head Record")
 player_set = set()
 for match in matches:
     player_set.update([match["player1"], match["player2"]])
-players = sorted(list(player_set))
+players = sorted(list(active_players - {"Piyush"})) + (["Piyush"] if "Piyush" in active_players else [])
 
 # Initialize H2H win matrix
 h2h = pd.DataFrame(0, index=players, columns=players)
@@ -306,3 +326,23 @@ def highlight_diagonal(val):
 
 st.dataframe(h2h.style.format("{:.0f}").set_caption("Wins Against Other Players").background_gradient(cmap="Blues", axis=None), use_container_width=True)
 
+
+
+st.header("🧑‍🤝‍🧑 Club Members")
+
+# All registered players
+all_players = sorted(load_players())  # from input file
+rated_players = active_players       # already computed
+unrated_players = set(all_players) - rated_players
+
+# Build display DataFrame
+members_df = pd.DataFrame([
+    {
+        "Player": player,
+        "Status": "🟢 Rated" if player in rated_players else "⚪ Unrated"
+    }
+    for player in all_players
+])
+
+# Show table
+st.dataframe(members_df, use_container_width=True)
