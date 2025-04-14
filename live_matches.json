@@ -110,5 +110,26 @@
     "player2": "Ameta",
     "score1": 11,
     "score2": 5
+  },
+  {
+    "date": "2025-04-31",
+    "player1": "Swapnil",
+    "player2": "Piyush",
+    "score1": 9,
+    "score2": 11
+  },
+  {
+    "date": "2025-04-12",
+    "player1": "Swapnil",
+    "player2": "Amogh",
+    "score1": 4,
+    "score2": 11
+  },
+  {
+    "date": "2025-04-12",
+    "player1": "Amogh",
+    "player2": "Piyush",
+    "score1": 10,
+    "score2": 12
   }
 ]
