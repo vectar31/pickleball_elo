@@ -24,6 +24,8 @@ INPUT_FILE = "input.json"
 LIVE_MATCHES_FILE = "live_matches.json"
 OUTPUT_RATINGS = "output/ratings.json"
 OUTPUT_HISTORY = "output/history.json"
+DOUBLES_MATCHES_FILE = "doubles_results.json"
+
 
 def load_matches():
     input_matches = _load_json(INPUT_FILE).get("matches", [])
@@ -104,3 +106,47 @@ def add_match(player1, player2, score1, score2):
     _save_json(LIVE_MATCHES_FILE, existing)
 
     return "✅ Match added!"
+
+def compute_doubles_ratings_and_history():
+    matches = _load_json(DOUBLES_MATCHES_FILE)
+    ratings = defaultdict(lambda: DEFAULT_RATING)
+    history = defaultdict(lambda: [(0, DEFAULT_RATING)])
+
+    match_number = 1
+
+    for match in matches:
+        team1 = match["team1"]
+        team2 = match["team2"]
+        s1 = match["score1"]
+        s2 = match["score2"]
+
+        if s1 == s2 or set(team1) & set(team2):
+            continue  # skip invalid matches
+
+        # Compute team average ratings
+        r1 = sum(ratings[p] for p in team1) / 2
+        r2 = sum(ratings[p] for p in team2) / 2
+
+        # Determine win/loss
+        result = 1 if s1 > s2 else 0
+        r1_new, r2_new = update_elo(r1, r2, result)
+
+        # Apply new rating to each player
+        # Apply new rating to each player in team1
+        for p in team1:
+            r_individual = ratings[p]
+            delta = r1_new - r1
+            ratings[p] = round(r_individual + delta, 2)
+            history[p].append((match_number, ratings[p]))
+
+        # Apply new rating to each player in team2
+        for p in team2:
+            r_individual = ratings[p]
+            delta = r2_new - r2
+            ratings[p] = round(r_individual + delta, 2)
+            history[p].append((match_number, ratings[p]))
+
+
+        match_number += 1
+
+    return dict(ratings), dict(history), matches
