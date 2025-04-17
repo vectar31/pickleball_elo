@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from elo import load_players, compute_ratings_and_history, add_match
 from statsmodels.nonparametric.smoothers_lowess import lowess
+from elo import compute_doubles_ratings_and_history
 
 def sort_with_promoter_last(df, sort_by, ascending=False):
     df_sorted = df.sort_values(by=sort_by, ascending=ascending)
@@ -45,7 +46,7 @@ if st.sidebar.button("Submit Match"):
         st.sidebar.error("Incorrect password! 🚫")
 
 # Ratings Table
-st.header("📊 Current Elo Ratings")
+st.header("📊 Singles Elo Ratings")
 df = pd.DataFrame([
     (p, ratings[p]) for p in ratings if p in active_players
 ], columns=["Player", "Rating"])
@@ -58,7 +59,7 @@ st.dataframe(df.style.format({"Rating": "{:.2f}"}), use_container_width=True)
 
 # Graph
 # Graph
-st.header("📈 Elo Progress Over Matches")
+st.header("📈 Singles Elo Progress")
 
 # Convert history to long-form DataFrame for seaborn
 graph_data = []
@@ -99,10 +100,66 @@ plt.tight_layout()
 
 st.pyplot(fig)
 
+# 🔁 Doubles Elo Ratings
+st.header("👯 Doubles Elo Ratings")
+
+doubles_ratings, doubles_history, doubles_matches = compute_doubles_ratings_and_history()
+
+doubles_data = [
+    {"Player": p, "Doubles Elo": r}
+    for p, r in doubles_ratings.items()
+    if len(doubles_history[p]) > 1
+]
+
+df_doubles = pd.DataFrame(doubles_data)
+df_doubles = df_doubles.sort_values(by="Doubles Elo", ascending=False).reset_index(drop=True)
+
+if df_doubles.empty:
+    st.write("No doubles matches played yet.")
+else:
+    st.dataframe(df_doubles.style.format({"Doubles Elo": "{:.2f}"}), use_container_width=True)
+
+
+# 📈 Doubles Elo Progress
+st.header("📈 Doubles Elo Progress Over Matches")
+
+doubles_graph_data = []
+for player, series in doubles_history.items():
+    for match_num, rating in series:
+        doubles_graph_data.append({
+            "Player": player,
+            "Match #": match_num,
+            "Doubles Elo": rating
+        })
+
+doubles_graph_df = pd.DataFrame(doubles_graph_data)
+
+if doubles_graph_df.empty:
+    st.write("No doubles history to plot.")
+else:
+    fig, ax = plt.subplots(figsize=(14, 6))
+    sns.lineplot(
+        data=doubles_graph_df,
+        x="Match #",
+        y="Doubles Elo",
+        hue="Player",
+        marker="o",
+        linewidth=2.5,
+        markersize=8,
+        ax=ax
+    )
+    ax.set_title("🎾 Doubles Elo Ratings Per Match", fontsize=18, weight="bold", pad=15)
+    ax.set_xlabel("Match #", fontsize=12)
+    ax.set_ylabel("Doubles Elo Rating", fontsize=12)
+    ax.legend(title="Player", bbox_to_anchor=(1.01, 1), loc='upper left', frameon=True)
+    sns.despine(left=False, bottom=False)
+    ax.grid(True, linestyle="--", alpha=0.6)
+    plt.tight_layout()
+    st.pyplot(fig)
 
 
 # 🎯 Power Rankings & Elo Tiers
-st.header("🏅 Power Rankings & Tiers")
+st.header("🏅Singles Power Rankings & Tiers")
 
 # --- Streaks Dictionary ---
 # From earlier section where you compute win/loss streaks
@@ -185,7 +242,7 @@ st.dataframe(df_power.style.format({
 
 
 # Match history
-st.header("📜 Match History")
+st.header("📜Singles Match History")
 match_df = pd.DataFrame(matches)
 if not match_df.empty:
     st.dataframe(match_df[::-1], use_container_width=True)
@@ -194,7 +251,7 @@ else:
 
 from collections import defaultdict
 
-st.header("📊 Player Performance Stats")
+st.header("📊Singles Player Performance Stats")
 
 # Initialize stat containers
 stats = defaultdict(lambda: {
@@ -297,7 +354,7 @@ stats_df = sort_with_promoter_last(stats_df, "Wins", ascending=False).reset_inde
 st.dataframe(stats_df, use_container_width=True)
 
 
-st.header("🤜🤛 Head-to-Head Record")
+st.header("🤜🤛Singles Head-to-Head Record")
 
 # Get list of players
 player_set = set()
@@ -327,6 +384,26 @@ def highlight_diagonal(val):
 st.dataframe(h2h.style.format("{:.0f}").set_caption("Wins Against Other Players").background_gradient(cmap="Blues", axis=None), use_container_width=True)
 
 
+# 📜 Doubles Match History
+st.header("📜 Doubles Match History")
+
+if not doubles_matches:
+    st.write("No doubles matches yet.")
+else:
+    doubles_match_df = pd.DataFrame([
+        {
+            "Date": match["date"],
+            "Team 1": " + ".join(match["team1"]),
+            "Score 1": match["score1"],
+            "Score 2": match["score2"],
+            "Team 2": " + ".join(match["team2"]),
+        }
+        for match in doubles_matches
+    ])
+    st.dataframe(doubles_match_df[::-1], use_container_width=True)
+
+
+
 
 st.header("🧑‍🤝‍🧑 Club Members")
 
@@ -346,3 +423,5 @@ members_df = pd.DataFrame([
 
 # Show table
 st.dataframe(members_df, use_container_width=True)
+
+
