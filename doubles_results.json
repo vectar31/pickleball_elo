@@ -1,0 +1,45 @@
+[
+    {
+      "date": "2024-04-16",
+      "team1": ["Piyush", "Rishavdeep"],
+      "team2": ["Nihar", "Amogh"],
+      "score1": 4,
+      "score2": 11
+    },
+    {
+        "date": "2024-04-16",
+        "team1": ["Piyush", "Rishavdeep"],
+        "team2": ["Nihar", "Amogh"],
+        "score1": 7,
+        "score2": 11
+    },
+    {
+        "date": "2024-04-16",
+        "team1": ["Piyush", "Rishavdeep"],
+        "team2": ["Nihar", "Amogh"],
+        "score1": 8,
+        "score2": 11
+    },
+    {
+        "date": "2024-04-16",
+        "team1": ["Piyush", "Nihar"],
+        "team2": ["Rishavdeep", "Amogh"],
+        "score1": 11,
+        "score2": 8
+    },
+    {
+        "date": "2024-04-16",
+        "team1": ["Piyush", "Nihar"],
+        "team2": ["Rishavdeep", "Amogh"],
+        "score1": 11,
+        "score2": 5
+    },
+    {
+        "date": "2024-04-16",
+        "team1": ["Piyush", "Rishavdeep"],
+        "team2": ["Nihar", "Amogh"],
+        "score1": 5,
+        "score2": 11
+    }
+  ]
+  
