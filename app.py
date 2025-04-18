@@ -100,6 +100,10 @@ plt.tight_layout()
 
 st.pyplot(fig)
 
+st.markdown("""
+<hr style="border: none; height: 2px; background-color: #FF4B4B; margin: 20px 0;">
+""", unsafe_allow_html=True)
+
 # 🔁 Doubles Elo Ratings
 st.header("👯 Doubles Elo Ratings")
 
@@ -157,6 +161,9 @@ else:
     plt.tight_layout()
     st.pyplot(fig)
 
+st.markdown("""
+<hr style="border: none; height: 2px; background-color: #FF4B4B; margin: 20px 0;">
+""", unsafe_allow_html=True)
 
 # 🎯 Power Rankings & Elo Tiers
 st.header("🏅Singles Power Rankings & Tiers")
@@ -232,6 +239,9 @@ st.dataframe(df_power.style.format({
 }), use_container_width=True)
 
 
+st.markdown("""
+<hr style="border: none; height: 2px; background-color: #FF4B4B; margin: 20px 0;">
+""", unsafe_allow_html=True)
 
 
 # Match history
@@ -346,6 +356,194 @@ stats_df = pd.DataFrame(processed_stats)
 stats_df = sort_with_promoter_last(stats_df, "Wins", ascending=False).reset_index(drop=True)
 st.dataframe(stats_df, use_container_width=True)
 
+st.header("📊Doubles Player Performance Stats")
+
+# Initialize doubles stat containers
+doubles_stats = defaultdict(lambda: {
+    "Wins": 0,
+    "Losses": 0,
+    "Games": 0,
+    "Points Won": 0,
+    "Points Lost": 0,
+    "Streak History": []
+})
+
+# Populate doubles stats
+for match in doubles_matches:
+    team1 = match["team1"]
+    team2 = match["team2"]
+    s1, s2 = match["score1"], match["score2"]
+
+    # Determine winner and loser
+    if s1 > s2:
+        winners = team1
+        losers = team2
+        w_score, l_score = s1, s2
+    else:
+        winners = team2
+        losers = team1
+        w_score, l_score = s2, s1
+
+    for player in winners:
+        doubles_stats[player]["Wins"] += 1
+        doubles_stats[player]["Streak History"].append("W")
+
+    for player in losers:
+        doubles_stats[player]["Losses"] += 1
+        doubles_stats[player]["Streak History"].append("L")
+
+    for player in team1 + team2:
+        doubles_stats[player]["Games"] += 1
+
+    for player in team1:
+        doubles_stats[player]["Points Won"] += s1
+        doubles_stats[player]["Points Lost"] += s2
+
+    for player in team2:
+        doubles_stats[player]["Points Won"] += s2
+        doubles_stats[player]["Points Lost"] += s1
+
+# Process stats
+processed_doubles_stats = []
+for player, data in doubles_stats.items():
+    if player not in doubles_ratings:
+        continue
+    total_matches = data["Wins"] + data["Losses"]
+    games = data["Games"]
+    wins = data["Wins"]
+    losses = data["Losses"]
+    pw = data["Points Won"]
+    pl = data["Points Lost"]
+    history = data["Streak History"]
+
+    # Current streak
+    current_streak = ""
+    if history:
+        last = history[-1]
+        count = 0
+        for res in reversed(history):
+            if res == last:
+                count += 1
+            else:
+                break
+        current_streak = f"{count}{last}"
+
+    # Longest win/loss streak
+    def max_streak(seq, target):
+        max_count = count = 0
+        for res in seq:
+            if res == target:
+                count += 1
+                max_count = max(max_count, count)
+            else:
+                count = 0
+        return max_count
+
+    longest_w = max_streak(history, "W")
+    longest_l = max_streak(history, "L")
+
+    processed_doubles_stats.append({
+        "Player": player,
+        "Matches": total_matches,
+        "Wins": wins,
+        "Losses": losses,
+        "W/L %": round(wins / games * 100, 1) if games > 0 else 0,
+        "Current Streak": current_streak,
+        "Longest Win Streak": longest_w,
+        "Longest Loss Streak": longest_l,
+        "Avg Points Won": round(pw / games, 1) if games > 0 else 0,
+        "Avg Points Lost": round(pl / games, 1) if games > 0 else 0,
+    })
+
+# Display
+doubles_stats_df = pd.DataFrame(processed_doubles_stats)
+doubles_stats_df = sort_with_promoter_last(doubles_stats_df, "Wins", ascending=False).reset_index(drop=True)
+st.dataframe(doubles_stats_df, use_container_width=True)
+
+
+# 🤝 Doubles Partnership Insights
+st.header("🤝 Doubles Partner Synergy & Matchup Stats")
+
+# Track partner stats
+partner_stats = defaultdict(lambda: defaultdict(lambda: {"matches": 0, "wins": 0}))
+matchup_stats = defaultdict(lambda: defaultdict(lambda: {"wins": 0, "losses": 0, "total": 0}))
+
+# Process match data
+for match in doubles_matches:
+    t1, t2 = match["team1"], match["team2"]
+    s1, s2 = match["score1"], match["score2"]
+
+    if s1 > s2:
+        winning_team = t1
+        losing_team = t2
+    else:
+        winning_team = t2
+        losing_team = t1
+
+    # Partner stats
+    for team in [t1, t2]:
+        for p1 in team:
+            for p2 in team:
+                if p1 != p2:
+                    partner_stats[p1][p2]["matches"] += 1
+                    if team == winning_team:
+                        partner_stats[p1][p2]["wins"] += 1
+
+    # Matchup stats
+    team1_key = " & ".join(sorted(t1))
+    team2_key = " & ".join(sorted(t2))
+    if s1 > s2:
+        matchup_stats[team1_key][team2_key]["wins"] += 1
+        matchup_stats[team1_key][team2_key]["total"] += 1
+        matchup_stats[team2_key][team1_key]["losses"] += 1
+        matchup_stats[team2_key][team1_key]["total"] += 1
+    else:
+        matchup_stats[team2_key][team1_key]["wins"] += 1
+        matchup_stats[team2_key][team1_key]["total"] += 1
+        matchup_stats[team1_key][team2_key]["losses"] += 1
+        matchup_stats[team1_key][team2_key]["total"] += 1
+
+# Best Partner Table
+best_partner_data = []
+for player, partners in partner_stats.items():
+    best = max(partners.items(), key=lambda x: x[1]["wins"], default=(None, {"wins": 0}))
+    best_partner, stats = best
+    total = stats["matches"]
+    wins = stats["wins"]
+    win_pct = round(100 * wins / total, 1) if total > 0 else 0
+    best_partner_data.append({
+        "Player": player,
+        "Best Partner": best_partner,
+        "Matches Together": total,
+        "Wins Together": wins,
+        "Win %": win_pct
+    })
+
+best_partner_df = pd.DataFrame(best_partner_data).sort_values(by="Win %", ascending=False)
+st.subheader("🏅 Best Doubles Partner (by Win %)")
+st.dataframe(best_partner_df, use_container_width=True)
+
+# Matchup Stats Table
+matchup_data = []
+for team1, opponents in matchup_stats.items():
+    for team2, stats in opponents.items():
+        if team1 < team2:  # avoid duplicate reverse entries
+            matchup_data.append({
+                "Team 1": team1,
+                "Team 2": team2,
+                "Wins": stats["wins"],
+                "Losses": stats["losses"],
+                "Total Matches": stats["total"],
+                "Win %": round(100 * stats["wins"] / stats["total"], 1) if stats["total"] > 0 else 0
+            })
+
+matchup_df = pd.DataFrame(matchup_data).sort_values(by="Total Matches", ascending=False)
+
+st.subheader("🏓 Doubles Matchup Records")
+st.dataframe(matchup_df, use_container_width=True)
+
+
+
 
 st.header("🤜🤛Singles Head-to-Head Record")
 
@@ -416,5 +614,3 @@ members_df = pd.DataFrame([
 
 # Show table
 st.dataframe(members_df, use_container_width=True)
-
-
