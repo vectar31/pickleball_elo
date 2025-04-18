@@ -41,5 +41,50 @@
         "score1": 5,
         "score2": 11
     }
+    ,
+    {
+        "date": "2024-04-18",
+        "team1": ["Swapnil", "Piyush"],
+        "team2": ["Nihar", "Milind"],
+        "score1": 11,
+        "score2": 9
+    }
+    ,
+    {
+        "date": "2024-04-18",
+        "team1": ["Swapnil", "Piyush"],
+        "team2": ["Nihar", "Milind"],
+        "score1": 12,
+        "score2": 10
+    }
+    ,
+    {
+        "date": "2024-04-18",
+        "team1": ["Swapnil", "Bhaddo"],
+        "team2": ["Nihar", "Milind"],
+        "score1": 2,
+        "score2": 11
+    },
+    {
+        "date": "2024-04-18",
+        "team1": ["Bhaddo", "Piyush"],
+        "team2": ["Nihar", "Swapnil"],
+        "score1": 11,
+        "score2": 7
+    },
+    {
+        "date": "2024-04-18",
+        "team1": ["Swapnil", "Nihar"],
+        "team2": ["Milind", "Bhaddo"],
+        "score1": 11,
+        "score2": 7
+    },
+    {
+        "date": "2024-04-18",
+        "team1": ["Swapnil", "Milind"],
+        "team2": ["Bhaddo", "Piyush"],
+        "score1": 11,
+        "score2": 5
+    }
   ]
   
