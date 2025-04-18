@@ -209,14 +209,7 @@ def compute_power_ranking(rating, streak):
 
 # --- Elo Tiers ---
 def elo_tier_classification(elo):
-    if elo >= 1050:
-        return "🏆 Elite"
-    elif elo >= 1020:
-        return "🔥 Pro"
-    elif elo >= 990:
-        return "📈 Rising Star"
-    else:
-        return "🧱 Developing"
+    return "🏆 DIV I"
 
 # Combine into DataFrame
 df_power = pd.DataFrame([
