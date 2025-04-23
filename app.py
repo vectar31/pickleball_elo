@@ -72,8 +72,21 @@ for player, series in history.items():
         continue
 
     # Add actual history
-    for match_num, rating in series:
+    # Interpolate between matches
+    for i in range(len(series)):
+        match_num, rating = series[i]
         graph_data.append({"Player": player, "Match #": match_num, "Elo Rating": rating})
+
+        # Add flat Elo for skipped matches (if any)
+        if i < len(series) - 1:
+            next_match_num, _ = series[i + 1]
+            for skipped in range(match_num + 1, next_match_num):
+                graph_data.append({
+                    "Player": player,
+                    "Match #": skipped,
+                    "Elo Rating": rating  # same as current
+                })
+
 
     # Add extension to max match
     last_match_num, last_rating = series[-1]
@@ -149,26 +162,37 @@ max_doubles_match_num = max(
     or [0]  # fallback if empty
 )
 
-# Pad doubles history with last Elo
+# Build extended and interpolated doubles Elo history
 doubles_graph_data = []
 for player, series in doubles_history.items():
     if not series:
         continue
 
-    # Add actual history
-    for match_num, rating in series:
+    # Add match-by-match Elo, interpolating missed matches
+    for i in range(len(series)):
+        match_num, rating = series[i]
         doubles_graph_data.append({
             "Player": player,
             "Match #": match_num,
             "Doubles Elo": rating
         })
 
-    # Extend to latest match with flat Elo
+        # Interpolate Elo for skipped matches (flat line)
+        if i < len(series) - 1:
+            next_match_num, _ = series[i + 1]
+            for skipped_match in range(match_num + 1, next_match_num):
+                doubles_graph_data.append({
+                    "Player": player,
+                    "Match #": skipped_match,
+                    "Doubles Elo": rating
+                })
+
+    # Extend to latest match if needed
     last_match_num, last_rating = series[-1]
-    if last_match_num < max_doubles_match_num:
+    for extra_match in range(last_match_num + 1, max_doubles_match_num + 1):
         doubles_graph_data.append({
             "Player": player,
-            "Match #": max_doubles_match_num,
+            "Match #": extra_match,
             "Doubles Elo": last_rating
         })
 
