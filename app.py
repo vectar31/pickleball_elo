@@ -5,6 +5,8 @@ import seaborn as sns
 from elo import load_players, compute_ratings_and_history, add_match
 from statsmodels.nonparametric.smoothers_lowess import lowess
 from elo import compute_doubles_ratings_and_history
+from statsmodels.nonparametric.smoothers_lowess import lowess
+
 
 def sort_with_promoter_last(df, sort_by, ascending=False):
     df_sorted = df.sort_values(by=sort_by, ascending=ascending)
@@ -129,6 +131,62 @@ plt.tight_layout()
 
 st.pyplot(fig)
 
+
+# Optional: Detailed Elo graph for a single player
+st.subheader("🔍 Singles Elo History (One Player at a Time)")
+
+# Get unique players
+unique_singles_players = sorted(graph_df["Player"].unique())
+selected_single_player = st.selectbox("Select a player to view their Elo trend:", unique_singles_players, key="singles_player_smooth")
+
+# Filter and sort player's data
+single_player_df = graph_df[graph_df["Player"] == selected_single_player].sort_values("Match #")
+
+# Plot step graph with chess.com styling
+fig, ax = plt.subplots(figsize=(10, 4))
+
+# Step plot
+ax.step(
+    single_player_df["Match #"],
+    single_player_df["Elo Rating"],
+    where="post",
+    linewidth=2.5,
+    color="#67cfff",
+    label="Elo Rating"
+)
+
+# Fill under the curve
+ax.fill_between(
+    single_player_df["Match #"],
+    single_player_df["Elo Rating"],
+    step="post",
+    alpha=0.2,
+    color="#67cfff"
+)
+
+# Style
+ax.set_title(f"📈 Elo Progress: {selected_single_player}", fontsize=16, weight="bold")
+ax.set_xlabel("Match #", fontsize=12)
+ax.set_ylabel("Elo Rating", fontsize=12)
+
+# Dynamic Y-axis limits
+elo_min = single_player_df["Elo Rating"].min()
+elo_max = single_player_df["Elo Rating"].max()
+buffer = max(10, (elo_max - elo_min) * 0.1)
+ax.set_ylim(elo_min - buffer, elo_max + buffer)
+
+# Dark styling
+ax.grid(alpha=0.3)
+ax.set_facecolor("#1e1e1e")
+fig.patch.set_facecolor("#1e1e1e")
+ax.tick_params(colors='white')
+ax.yaxis.label.set_color('white')
+ax.xaxis.label.set_color('white')
+ax.title.set_color('white')
+
+st.pyplot(fig)
+
+
 st.markdown("""
 <hr style="border: none; height: 2px; background-color: #FF4B4B; margin: 20px 0;">
 """, unsafe_allow_html=True)
@@ -221,6 +279,59 @@ else:
     ax.grid(True, linestyle="--", alpha=0.6)
     plt.tight_layout()
     st.pyplot(fig)
+
+
+# Optional: Detailed Elo graph for a single player
+st.subheader("🔍 Doubles Elo History (One Player at a Time)")
+
+# Get unique players
+# Dropdown to select player
+unique_doubles_players = sorted(doubles_graph_df["Player"].unique())
+selected_player = st.selectbox("Select a player to view their Elo trend:", unique_doubles_players, key="doubles_player_smooth")
+
+# Filter and sort player's data
+player_df = doubles_graph_df[doubles_graph_df["Player"] == selected_player].sort_values("Match #")
+
+# Apply LOESS smoothing
+fig, ax = plt.subplots(figsize=(10, 4))
+
+# Plot step line (where="post" makes it flat till next point)
+ax.step(
+    player_df["Match #"],
+    player_df["Doubles Elo"],
+    where="post",
+    linewidth=2.5,
+    color="#67cfff",
+    label="Elo Rating"
+)
+
+# Fill under the curve for that nice chess.com effect
+ax.fill_between(
+    player_df["Match #"],
+    player_df["Doubles Elo"],
+    step="post",
+    alpha=0.2,
+    color="#67cfff"
+)
+
+# Style tweaks
+ax.set_title(f"📈 Elo Progress: {selected_player}", fontsize=16, weight="bold")
+ax.set_xlabel("Match #", fontsize=12)
+elo_min = player_df["Doubles Elo"].min()
+elo_max = player_df["Doubles Elo"].max()
+buffer = max(10, (elo_max - elo_min) * 0.1)
+ax.set_ylim(elo_min - buffer, elo_max + buffer)
+ax.grid(alpha=0.3)
+ax.set_facecolor("#1e1e1e")  # dark background like chess.com
+fig.patch.set_facecolor("#1e1e1e")
+ax.tick_params(colors='white')
+ax.yaxis.label.set_color('white')
+ax.xaxis.label.set_color('white')
+ax.title.set_color('white')
+
+st.pyplot(fig)
+
+
 
 st.markdown("""
 <hr style="border: none; height: 2px; background-color: #FF4B4B; margin: 20px 0;">
