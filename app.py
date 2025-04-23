@@ -62,12 +62,28 @@ st.dataframe(df.style.format({"Rating": "{:.2f}"}), use_container_width=True)
 st.header("📈 Singles Elo Progress")
 
 # Convert history to long-form DataFrame for seaborn
+# Determine max match #
+max_match_num = max([match_num for series in history.values() for match_num, _ in series])
+
+# Pad history with last Elo
 graph_data = []
 for player, series in history.items():
-    if player not in active_players:
+    if player not in active_players or not series:
         continue
+
+    # Add actual history
     for match_num, rating in series:
         graph_data.append({"Player": player, "Match #": match_num, "Elo Rating": rating})
+
+    # Add extension to max match
+    last_match_num, last_rating = series[-1]
+    if last_match_num < max_match_num:
+        graph_data.append({
+            "Player": player,
+            "Match #": max_match_num,
+            "Elo Rating": last_rating
+        })
+
 
 
 graph_df = pd.DataFrame(graph_data)
@@ -127,14 +143,35 @@ else:
 # 📈 Doubles Elo Progress
 st.header("📈 Doubles Elo Progress Over Matches")
 
+# Determine max match number for doubles
+max_doubles_match_num = max(
+    [match_num for series in doubles_history.values() for match_num, _ in series]
+    or [0]  # fallback if empty
+)
+
+# Pad doubles history with last Elo
 doubles_graph_data = []
 for player, series in doubles_history.items():
+    if not series:
+        continue
+
+    # Add actual history
     for match_num, rating in series:
         doubles_graph_data.append({
             "Player": player,
             "Match #": match_num,
             "Doubles Elo": rating
         })
+
+    # Extend to latest match with flat Elo
+    last_match_num, last_rating = series[-1]
+    if last_match_num < max_doubles_match_num:
+        doubles_graph_data.append({
+            "Player": player,
+            "Match #": max_doubles_match_num,
+            "Doubles Elo": last_rating
+        })
+
 
 doubles_graph_df = pd.DataFrame(doubles_graph_data)
 
