@@ -190,6 +190,22 @@
   }
   ,
   {
+    "date": "2025-04-24",
+    "player1": "Arora",
+    "player2": "Ameta",
+    "score1": 11,
+    "score2": 3
+  }
+  ,
+  {
+    "date": "2025-04-24",
+    "player1": "Ameta",
+    "player2": "Arora",
+    "score1": 3,
+    "score2": 11
+  }
+  ,
+  {
     "date": "2025-04-25",
     "player1": "Nihar",
     "player2": "Swapnil",
