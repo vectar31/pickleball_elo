@@ -20,6 +20,8 @@ st.set_page_config(page_title="Pickleball Elo Ratings", layout="wide")
 st.title("🏓 Pickleball Elo Tracker")
 
 ratings, history, matches = compute_ratings_and_history()
+doubles_ratings, doubles_history, doubles_matches = compute_doubles_ratings_and_history()
+
 # Set of players who have played at least one match
 active_players = set()
 for match in matches:
@@ -28,24 +30,31 @@ for match in matches:
 players = sorted(load_players())
 
 # Sidebar: Match Entry
-st.sidebar.header("➕ Add Match Result")
-col1, col2 = st.sidebar.columns(2)
-p1 = col1.selectbox("Player 1", players)
-p2 = col2.selectbox("Player 2", players)
-col3, col4 = st.sidebar.columns(2)
-score1 = col3.number_input(f"{p1} score", 0, 21, value=11)
-score2 = col4.number_input(f"{p2} score", 0, 21, value=8)
+# Sidebar: Club Stats Overview
+st.sidebar.header("📊 Club Stats")
 
-# Password input
-password = st.sidebar.text_input("🔒 Admin Password", type="password")
+# Basic counts
+total_singles_matches = len(matches)
+total_doubles_matches = len(doubles_matches)
 
-if st.sidebar.button("Submit Match"):
-    if password == "letmein":  # change this to your actual secret
-        msg = add_match(p1, p2, score1, score2)
-        st.sidebar.success(msg)
-        st.rerun()
-    else:
-        st.sidebar.error("Incorrect password! 🚫")
+singles_players = set()
+for match in matches:
+    singles_players.update([match["player1"], match["player2"]])
+
+doubles_players = set()
+for match in doubles_matches:
+    doubles_players.update(match["team1"] + match["team2"])
+
+# Display stats
+st.sidebar.markdown(f"""
+- 🧑 **Total Club Members:** {len(set(load_players()))}
+- 🏓 **Singles Players:** {len(singles_players)}
+- 👯 **Doubles Players:** {len(doubles_players)}
+- 🎮 **Singles Matches Played:** {total_singles_matches}
+- 🎮 **Doubles Matches Played:** {total_doubles_matches}
+- 🔁 **Total Matches:** {total_singles_matches + total_doubles_matches}
+""")
+
 
 # Ratings Table
 st.header("📊 Singles Elo Ratings")
@@ -199,8 +208,6 @@ st.markdown("""
 
 # 🔁 Doubles Elo Ratings
 st.header("👯 Doubles Elo Ratings")
-
-doubles_ratings, doubles_history, doubles_matches = compute_doubles_ratings_and_history()
 
 doubles_data = [
     {"Player": p, "Doubles Elo": r}
