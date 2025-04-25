@@ -142,24 +142,30 @@ selected_single_player = st.selectbox("Select a player to view their Elo trend:"
 # Filter and sort player's data
 single_player_df = graph_df[graph_df["Player"] == selected_single_player].sort_values("Match #")
 
-# Plot step graph with chess.com styling
+from statsmodels.nonparametric.smoothers_lowess import lowess
+
+# Apply LOESS smoothing to player's Elo trend
+smoothed = lowess(
+    exog=single_player_df["Match #"],
+    endog=single_player_df["Elo Rating"],
+    frac=0.3  # adjust smoothing factor if needed
+)
+
+# Plot smoothed Elo trend
 fig, ax = plt.subplots(figsize=(10, 4))
 
-# Step plot
-ax.step(
-    single_player_df["Match #"],
-    single_player_df["Elo Rating"],
-    where="post",
+ax.plot(
+    smoothed[:, 0],
+    smoothed[:, 1],
     linewidth=2.5,
     color="#67cfff",
-    label="Elo Rating"
+    label="Smoothed Elo Rating"
 )
 
 # Fill under the curve
 ax.fill_between(
-    single_player_df["Match #"],
-    single_player_df["Elo Rating"],
-    step="post",
+    smoothed[:, 0],
+    smoothed[:, 1],
     alpha=0.2,
     color="#67cfff"
 )
@@ -170,8 +176,8 @@ ax.set_xlabel("Match #", fontsize=12)
 ax.set_ylabel("Elo Rating", fontsize=12)
 
 # Dynamic Y-axis limits
-elo_min = single_player_df["Elo Rating"].min()
-elo_max = single_player_df["Elo Rating"].max()
+elo_min = smoothed[:, 1].min()
+elo_max = smoothed[:, 1].max()
 buffer = max(10, (elo_max - elo_min) * 0.1)
 ax.set_ylim(elo_min - buffer, elo_max + buffer)
 
