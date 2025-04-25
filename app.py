@@ -52,7 +52,7 @@ st.header("📊 Singles Elo Ratings")
 df = pd.DataFrame([
     (p, ratings[p]) for p in ratings if p in active_players
 ], columns=["Player", "Rating"])
-df = sort_with_promoter_last(df, "Rating", ascending=False).reset_index(drop=True)
+df = df.sort_values("Rating", ascending=False).reset_index(drop=True)
 st.dataframe(df.style.format({"Rating": "{:.2f}"}), use_container_width=True)
 
 # Graph
@@ -403,7 +403,7 @@ df_power = pd.DataFrame([
 ])
 
 
-df_power = sort_with_promoter_last(df_power, "Power Ranking", ascending=False).reset_index(drop=True)
+df_power = df_power.sort_values("Power Ranking", ascending=False).reset_index(drop=True)
 
 st.dataframe(df_power.style.format({
     "Elo Rating": "{:.2f}",
@@ -525,7 +525,7 @@ for player, data in stats.items():
 
 # Display as DataFrame
 stats_df = pd.DataFrame(processed_stats)
-stats_df = sort_with_promoter_last(stats_df, "Wins", ascending=False).reset_index(drop=True)
+stats_df = stats_df.sort_values("Wins", ascending=False).reset_index(drop=True)
 st.dataframe(stats_df, use_container_width=True)
 
 st.header("📊Doubles Player Performance Stats")
@@ -629,7 +629,7 @@ for player, data in doubles_stats.items():
 
 # Display
 doubles_stats_df = pd.DataFrame(processed_doubles_stats)
-doubles_stats_df = sort_with_promoter_last(doubles_stats_df, "Wins", ascending=False).reset_index(drop=True)
+doubles_stats_df = doubles_stats_df.sort_values("Wins", ascending=False).reset_index(drop=True)
 st.dataframe(doubles_stats_df, use_container_width=True)
 
 
