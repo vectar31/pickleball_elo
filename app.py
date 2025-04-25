@@ -288,10 +288,11 @@ else:
 
 
 # Optional: Detailed Elo graph for a single player
+from statsmodels.nonparametric.smoothers_lowess import lowess
+
 st.subheader("🔍 Doubles Elo History (One Player at a Time)")
 
 # Get unique players
-# Dropdown to select player
 unique_doubles_players = sorted(doubles_graph_df["Player"].unique())
 selected_player = st.selectbox("Select a player to view their Elo trend:", unique_doubles_players, key="doubles_player_smooth")
 
@@ -299,23 +300,27 @@ selected_player = st.selectbox("Select a player to view their Elo trend:", uniqu
 player_df = doubles_graph_df[doubles_graph_df["Player"] == selected_player].sort_values("Match #")
 
 # Apply LOESS smoothing
-fig, ax = plt.subplots(figsize=(10, 4))
-
-# Plot step line (where="post" makes it flat till next point)
-ax.step(
-    player_df["Match #"],
-    player_df["Doubles Elo"],
-    where="post",
-    linewidth=2.5,
-    color="#67cfff",
-    label="Elo Rating"
+smoothed = lowess(
+    exog=player_df["Match #"],
+    endog=player_df["Doubles Elo"],
+    frac=0.3  # adjust for more/less smoothing
 )
 
-# Fill under the curve for that nice chess.com effect
+# Plot smoothed Elo
+fig, ax = plt.subplots(figsize=(10, 4))
+
+ax.plot(
+    smoothed[:, 0],
+    smoothed[:, 1],
+    linewidth=2.5,
+    color="#67cfff",
+    label="Smoothed Elo Rating"
+)
+
+# Fill under the curve
 ax.fill_between(
-    player_df["Match #"],
-    player_df["Doubles Elo"],
-    step="post",
+    smoothed[:, 0],
+    smoothed[:, 1],
     alpha=0.2,
     color="#67cfff"
 )
@@ -323,12 +328,17 @@ ax.fill_between(
 # Style tweaks
 ax.set_title(f"📈 Elo Progress: {selected_player}", fontsize=16, weight="bold")
 ax.set_xlabel("Match #", fontsize=12)
-elo_min = player_df["Doubles Elo"].min()
-elo_max = player_df["Doubles Elo"].max()
+ax.set_ylabel("Doubles Elo", fontsize=12)
+
+# Dynamic Y-axis limits
+elo_min = smoothed[:, 1].min()
+elo_max = smoothed[:, 1].max()
 buffer = max(10, (elo_max - elo_min) * 0.1)
 ax.set_ylim(elo_min - buffer, elo_max + buffer)
+
+# Dark mode style
 ax.grid(alpha=0.3)
-ax.set_facecolor("#1e1e1e")  # dark background like chess.com
+ax.set_facecolor("#1e1e1e")
 fig.patch.set_facecolor("#1e1e1e")
 ax.tick_params(colors='white')
 ax.yaxis.label.set_color('white')
