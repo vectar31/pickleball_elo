@@ -1,11 +1,14 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import seaborn as sns
+import numpy as np
 from elo import load_players, compute_ratings_and_history, add_match
 from statsmodels.nonparametric.smoothers_lowess import lowess
 from elo import compute_doubles_ratings_and_history
 from statsmodels.nonparametric.smoothers_lowess import lowess
+
 
 
 def sort_with_promoter_last(df, sort_by, ascending=False):
@@ -740,34 +743,126 @@ st.dataframe(matchup_df, use_container_width=True)
 
 
 
-st.header("🤜🤛Singles Head-to-Head Record")
+st.header("🤜🤛 Singles Head-to-Head Record")
 
-# Get list of players
-player_set = set()
-for match in matches:
-    player_set.update([match["player1"], match["player2"]])
-players = sorted(list(active_players - {"Piyush"})) + (["Piyush"] if "Piyush" in active_players else [])
+# === Build H2H Matrix ===
+players = sorted(list(active_players))
+h2h_wins = pd.DataFrame(0, index=players, columns=players)
+h2h_losses = pd.DataFrame(0, index=players, columns=players)
 
-# Initialize H2H win matrix
-h2h = pd.DataFrame(0, index=players, columns=players)
-
-# Populate matrix
+# Count wins/losses
 for match in matches:
     p1, p2 = match["player1"], match["player2"]
     s1, s2 = match["score1"], match["score2"]
-
+    if p1 not in players or p2 not in players:
+        continue
     if s1 > s2:
         winner, loser = p1, p2
     else:
         winner, loser = p2, p1
+    h2h_wins.loc[winner, loser] += 1
+    h2h_losses.loc[loser, winner] += 1
 
-    h2h.loc[winner, loser] += 1
+# === PART 1: Interactive View (Player vs All) ===
+st.subheader("🔍 Select a Player to View Matchups")
+selected = st.selectbox("Choose a player:", players, key="h2h_selector")
 
-# Styling the table
-def highlight_diagonal(val):
-    return 'background-color: lightgray' if val.name == val.index else ''
+one_vs_all = []
+for opponent in players:
+    if opponent == selected:
+        continue
+    wins = h2h_wins.loc[selected, opponent]
+    losses = h2h_losses.loc[selected, opponent]
+    total = wins + losses
+    win_pct = round(100 * wins / total, 1) if total > 0 else np.nan
+    one_vs_all.append({
+        "Opponent": opponent,
+        "Wins": wins,
+        "Losses": losses,
+        "Total Matches": total,
+        "Win %": win_pct
+    })
 
-st.dataframe(h2h.style.format("{:.0f}").set_caption("Wins Against Other Players").background_gradient(cmap="Blues", axis=None), use_container_width=True)
+one_vs_all_df = pd.DataFrame(one_vs_all)
+
+# Drop rows with 0 matches
+one_vs_all_df = one_vs_all_df[one_vs_all_df["Total Matches"] > 0]
+
+# Sort by win %
+one_vs_all_df = one_vs_all_df.sort_values(by="Win %", ascending=False, na_position="last")
+
+st.dataframe(one_vs_all_df, use_container_width=True)
+
+# === PART 2: Full Heatmap of Win % ===
+st.subheader("📊 All Players Head-to-Head Win % Matrix")
+
+# Avoid div by zero
+total_matches = h2h_wins + h2h_losses
+h2h_win_pct = h2h_wins.divide(total_matches).fillna(0) * 100
+
+# Format tooltips
+# Create masked labels with Win % and W-L
+annot_data = h2h_win_pct.copy()
+for i in range(len(players)):
+    for j in range(len(players)):
+        wins = h2h_wins.iloc[i, j]
+        losses = h2h_losses.iloc[i, j]
+        total = wins + losses
+        if total == 0:
+            annot_data.iloc[i, j] = ""
+        else:
+            pct = h2h_win_pct.iloc[i, j]
+            annot_data.iloc[i, j] = f"{int(round(pct))}%\n({wins}-{losses})"
+
+# Display heatmap with safe annotations
+
+
+# Heatmap styling constants
+figsize = max(8, len(players) * 0.6)
+fig, ax = plt.subplots(figsize=(figsize, figsize))
+
+# Use a smoother diverging colormap
+cmap = mpl.colors.LinearSegmentedColormap.from_list(
+    "custom_coolwarm",
+    ["#1f77b4", "#f7f7f7", "#d62728"]
+)
+
+# Display heatmap
+sns.heatmap(
+    h2h_win_pct.astype(float),
+    annot=annot_data.values,
+    fmt='',
+    cmap=cmap,
+    center=50,
+    square=True,
+    linewidths=0.3,
+    linecolor="#dddddd",
+    cbar_kws={"label": "Win %"},
+    xticklabels=players,
+    yticklabels=players,
+    ax=ax,
+    annot_kws={"fontsize": 9, "color": "black", "weight": "bold"}
+)
+
+# Titles and labels
+ax.set_title("🎯 Head-to-Head Win % (Row vs Column)", fontsize=16, weight='bold', pad=20)
+ax.set_xlabel("Opponent", fontsize=12, labelpad=10)
+ax.set_ylabel("Player", fontsize=12, labelpad=10)
+
+# Rotate ticks and clean font
+plt.xticks(rotation=45, ha='right', fontsize=10)
+plt.yticks(rotation=0, fontsize=10)
+
+# Remove top and right border
+sns.despine(left=True, bottom=True)
+
+# Make tick labels bold
+for label in (ax.get_xticklabels() + ax.get_yticklabels()):
+    label.set_fontweight("bold")
+
+# Tight layout for spacing
+plt.tight_layout()
+st.pyplot(fig)
 
 
 # 📜 Doubles Match History
