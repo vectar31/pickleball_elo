@@ -411,16 +411,8 @@
         "date": "2024-04-27",
         "team1": ["Amogh", "Harshal"],
         "team2": ["Nihar", "Konark"],
-        "score1": 10,
-        "score2": 12
-    }
-    ,
-    {
-        "date": "2024-04-27",
-        "team1": ["Amogh", "Harshal"],
-        "team2": ["Nihar", "Konark"],
-        "score1": 11,
-        "score2": 8
+        "score1": 12,
+        "score2": 10
     }
     ,
     {
