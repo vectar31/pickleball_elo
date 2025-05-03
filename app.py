@@ -866,22 +866,21 @@ st.pyplot(fig)
 
 
 # 📜 Doubles Match History
-st.header("📜 Doubles Match History")
-
-if not doubles_matches:
-    st.write("No doubles matches yet.")
-else:
-    doubles_match_df = pd.DataFrame([
-        {
-            "Date": match["date"],
-            "Team 1": " + ".join(match["team1"]),
-            "Score 1": match["score1"],
-            "Score 2": match["score2"],
-            "Team 2": " + ".join(match["team2"]),
-        }
-        for match in doubles_matches
-    ])
-    st.dataframe(doubles_match_df[::-1], use_container_width=True)
+with st.expander("📜 Doubles Match History", expanded=False):
+    if not doubles_matches:
+        st.write("No doubles matches yet.")
+    else:
+        doubles_match_df = pd.DataFrame([
+            {
+                "Date": match["date"],
+                "Team 1": " + ".join(match["team1"]),
+                "Score 1": match["score1"],
+                "Score 2": match["score2"],
+                "Team 2": " + ".join(match["team2"]),
+            }
+            for match in doubles_matches
+        ])
+        st.dataframe(doubles_match_df[::-1], use_container_width=True)
 
 
 
