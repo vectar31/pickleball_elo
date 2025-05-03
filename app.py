@@ -444,11 +444,11 @@ st.markdown("""
 
 # Match history
 with st.expander("📜 Singles Match History", expanded=False):
-match_df = pd.DataFrame(matches)
-if not match_df.empty:
-    st.dataframe(match_df[::-1], use_container_width=True)
-else:
-    st.write("No matches yet.")
+    match_df = pd.DataFrame(matches)
+    if not match_df.empty:
+        st.dataframe(match_df[::-1], use_container_width=True)
+    else:
+        st.write("No matches yet.")
 
 from collections import defaultdict
 
