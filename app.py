@@ -442,15 +442,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# Match history
-with st.expander("📜 Singles Match History", expanded=False):
-    st.markdown("## 📜 Singles Match History")
-    match_df = pd.DataFrame(matches)
-    if not match_df.empty:
-        st.dataframe(match_df[::-1], use_container_width=True)
-    else:
-        st.write("No matches yet.")
-
 from collections import defaultdict
 
 st.header("📊Singles Player Performance Stats")
@@ -866,6 +857,15 @@ plt.tight_layout()
 st.pyplot(fig)
 
 
+# Singles Match history
+with st.expander("📜 Singles Match History", expanded=False):
+    st.markdown("## 📜 Singles Match History")
+    match_df = pd.DataFrame(matches)
+    if not match_df.empty:
+        st.dataframe(match_df[::-1], use_container_width=True)
+    else:
+        st.write("No matches yet.")
+
 # 📜 Doubles Match History
 with st.expander("📜 Doubles Match History", expanded=False):
     st.markdown("## 📜 Doubles Match History")
@@ -903,3 +903,4 @@ with st.expander("🧑‍🤝‍🧑 Club Members", expanded=False):
     
     # Show table
     st.dataframe(members_df, use_container_width=True)
+
