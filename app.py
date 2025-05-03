@@ -443,7 +443,8 @@ st.markdown("""
 
 
 # Match history
-with st.expander("📜 Singles Match History", expanded=False):
+with st.expander(" ", expanded=False):
+    st.markdown("## 📜 Singles Match History")
     match_df = pd.DataFrame(matches)
     if not match_df.empty:
         st.dataframe(match_df[::-1], use_container_width=True)
