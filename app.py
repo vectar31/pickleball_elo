@@ -885,23 +885,21 @@ with st.expander("📜 Doubles Match History", expanded=False):
         st.dataframe(doubles_match_df[::-1], use_container_width=True)
 
 
-
-
-st.header("🧑‍🤝‍🧑 Club Members")
-
-# All registered players
-all_players = sorted(load_players())  # from input file
-rated_players = active_players       # already computed
-unrated_players = set(all_players) - rated_players
-
-# Build display DataFrame
-members_df = pd.DataFrame([
-    {
-        "Player": player,
-        "Status": "🟢 Rated" if player in rated_players else "⚪ Unrated"
-    }
-    for player in all_players
-])
-
-# Show table
-st.dataframe(members_df, use_container_width=True)
+with st.expander("🧑‍🤝‍🧑 Club Members", expanded=False):
+    st.markdown("## 🧑‍🤝‍🧑 Club Members")
+    # All registered players
+    all_players = sorted(load_players())  # from input file
+    rated_players = active_players       # already computed
+    unrated_players = set(all_players) - rated_players
+    
+    # Build display DataFrame
+    members_df = pd.DataFrame([
+        {
+            "Player": player,
+            "Status": "🟢 Rated" if player in rated_players else "⚪ Unrated"
+        }
+        for player in all_players
+    ])
+    
+    # Show table
+    st.dataframe(members_df, use_container_width=True)
