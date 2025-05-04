@@ -390,85 +390,6 @@ st.markdown("""
 <hr style="border: none; height: 2px; background-color: #FF4B4B; margin: 20px 0;">
 """, unsafe_allow_html=True)
 
-# 🎯 Power Rankings & Elo Tiers
-st.header("🏅Singles Power Rankings & Tiers")
-
-# --- Streaks Dictionary ---
-# From earlier section where you compute win/loss streaks
-# streaks[player] = +ve (win streak), -ve (loss streak), 0 (no streak)
-# You must have `streaks` already calculated, if not:
-from collections import defaultdict
-
-def get_current_streaks(matches):
-    streaks = {}
-    
-    # Store player-wise result history (latest first)
-    player_results = defaultdict(list)
-
-    for match in reversed(matches):  # latest first
-        results = [
-            (match["player1"], match["score1"], match["score2"]),
-            (match["player2"], match["score2"], match["score1"]),
-        ]
-        for player, score, opp_score in results:
-            result = "W" if score > opp_score else "L"
-            player_results[player].append(result)
-
-    for player, results in player_results.items():
-        if not results:
-            streaks[player] = 0
-            continue
-
-        streak_type = results[0]  # W or L
-        streak_count = 0
-        for result in results:
-            if result == streak_type:
-                streak_count += 1
-            else:
-                break
-
-        # Make it negative if it's a losing streak
-        streaks[player] = streak_count if streak_type == "W" else -streak_count
-
-    return streaks
-
-
-streaks = get_current_streaks(matches)
-
-# --- Power Ranking ---
-def compute_power_ranking(rating, streak):
-    return rating + (5 * streak)
-
-# --- Elo Tiers ---
-def elo_tier_classification(elo):
-    return "🏆 DIV I"
-
-# Combine into DataFrame
-df_power = pd.DataFrame([
-    {
-        "Player": player,
-        "Elo Rating": ratings[player],
-        "Current Streak": f"{abs(streak)}{'W' if streak > 0 else 'L' if streak < 0 else ''}",
-        "Power Ranking": compute_power_ranking(ratings[player], streak),
-        "Tier": elo_tier_classification(ratings[player])
-    }
-    for player, streak in streaks.items() if player in active_players
-])
-
-
-df_power = df_power.sort_values("Power Ranking", ascending=False).reset_index(drop=True)
-
-st.dataframe(df_power.style.format({
-    "Elo Rating": "{:.2f}",
-    "Power Ranking": "{:.2f}"
-}), use_container_width=True)
-
-
-st.markdown("""
-<hr style="border: none; height: 2px; background-color: #FF4B4B; margin: 20px 0;">
-""", unsafe_allow_html=True)
-
-
 from collections import defaultdict
 
 st.header("📊Singles Player Performance Stats")
@@ -813,7 +734,7 @@ one_vs_all_df = one_vs_all_df.sort_values(by="Win %", ascending=False, na_positi
 st.dataframe(one_vs_all_df, use_container_width=True)
 
 # === PART 2: Full Heatmap of Win % ===
-st.subheader("📊 All Players Head-to-Head Win % Matrix")
+st.subheader("📊 Singles Head-to-Head Win % Matrix")
 
 # Avoid div by zero
 total_matches = h2h_wins + h2h_losses
