@@ -154,11 +154,22 @@ selected_single_player = st.selectbox("Select a player to view their Elo trend:"
 # Filter and sort player's data
 single_player_df = graph_df[graph_df["Player"] == selected_single_player].sort_values("Match #")
 
-from statsmodels.nonparametric.smoothers_lowess import lowess
+# Create a new match number sequence just for this player's matches
+player_matches = single_player_df[single_player_df["Elo Rating"] != single_player_df["Elo Rating"].shift()]  # Get only actual matches
+player_matches = player_matches.reset_index(drop=True)
+player_matches["Player Match #"] = player_matches.index + 1
+
+# Merge the new match numbers back to the full sequence
+single_player_df = single_player_df.merge(
+    player_matches[["Match #", "Player Match #"]], 
+    on="Match #", 
+    how="left"
+)
+single_player_df["Player Match #"] = single_player_df["Player Match #"].fillna(method='ffill')
 
 # Apply LOESS smoothing to player's Elo trend
 smoothed = lowess(
-    exog=single_player_df["Match #"],
+    exog=single_player_df["Player Match #"],
     endog=single_player_df["Elo Rating"],
     frac=0.3  # adjust smoothing factor if needed
 )
@@ -184,7 +195,7 @@ ax.fill_between(
 
 # Style
 ax.set_title(f"📈 Elo Progress: {selected_single_player}", fontsize=16, weight="bold")
-ax.set_xlabel("Match #", fontsize=12)
+ax.set_xlabel("Player's Match #", fontsize=12)  # Changed label to reflect player-specific matches
 ax.set_ylabel("Elo Rating", fontsize=12)
 
 # Dynamic Y-axis limits
@@ -309,9 +320,22 @@ selected_player = st.selectbox("Select a player to view their Elo trend:", uniqu
 # Filter and sort player's data
 player_df = doubles_graph_df[doubles_graph_df["Player"] == selected_player].sort_values("Match #")
 
+# Create a new match number sequence just for this player's matches
+player_matches = player_df[player_df["Doubles Elo"] != player_df["Doubles Elo"].shift()]  # Get only actual matches
+player_matches = player_matches.reset_index(drop=True)
+player_matches["Player Match #"] = player_matches.index + 1
+
+# Merge the new match numbers back to the full sequence
+player_df = player_df.merge(
+    player_matches[["Match #", "Player Match #"]], 
+    on="Match #", 
+    how="left"
+)
+player_df["Player Match #"] = player_df["Player Match #"].fillna(method='ffill')
+
 # Apply LOESS smoothing
 smoothed = lowess(
-    exog=player_df["Match #"],
+    exog=player_df["Player Match #"],
     endog=player_df["Doubles Elo"],
     frac=0.3  # adjust for more/less smoothing
 )
@@ -337,8 +361,11 @@ ax.fill_between(
 
 # Style tweaks
 ax.set_title(f"📈 Elo Progress: {selected_player}", fontsize=16, weight="bold")
-ax.set_xlabel("Match #", fontsize=12)
+ax.set_xlabel("Player's Match #", fontsize=12)  # Changed label to reflect player-specific matches
 ax.set_ylabel("Doubles Elo", fontsize=12)
+
+# Set x-axis to show only integer ticks
+ax.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
 
 # Dynamic Y-axis limits
 elo_min = smoothed[:, 1].min()
@@ -400,7 +427,7 @@ def get_current_streaks(matches):
             else:
                 break
 
-        # Make it negative if it’s a losing streak
+        # Make it negative if it's a losing streak
         streaks[player] = streak_count if streak_type == "W" else -streak_count
 
     return streaks
@@ -903,4 +930,3 @@ with st.expander("🧑‍🤝‍🧑 Club Members", expanded=False):
     
     # Show table
     st.dataframe(members_df, use_container_width=True)
-
