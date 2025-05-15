@@ -596,4 +596,68 @@
     "score1": 12,
     "score2": 10
   }
+  ,
+  {
+    "date": "2025-05-14",
+    "player1": "Ashim",
+    "player2": "Swapnil",
+    "score1": 11,
+    "score2": 8
+  }
+  ,
+  {
+    "date": "2025-05-14",
+    "player1": "Arora",
+    "player2": "Konark",
+    "score1": 11,
+    "score2": 2
+  }
+  ,
+  {
+    "date": "2025-05-14",
+    "player1": "Arora",
+    "player2": "Ashim",
+    "score1": 11,
+    "score2": 8
+  }
+  ,
+  {
+    "date": "2025-05-14",
+    "player1": "Piyush",
+    "player2": "Swapnil",
+    "score1": 11,
+    "score2": 9
+  }
+  ,
+  {
+    "date": "2025-05-14",
+    "player1": "Ashim",
+    "player2": "Amogh",
+    "score1": 11,
+    "score2": 1
+  }
+  ,
+  {
+    "date": "2025-05-14",
+    "player1": "Ashim",
+    "player2": "Amogh",
+    "score1": 11,
+    "score2": 1
+  }
+  ,
+  {
+    "date": "2025-05-14",
+    "player1": "Konark",
+    "player2": "Arora",
+    "score1": 9,
+    "score2": 11
+  }
+  ,
+  {
+    "date": "2025-05-14",
+    "player1": "Konark",
+    "player2": "Ashim",
+    "score1": 10,
+    "score2": 12
+  }
 ]
