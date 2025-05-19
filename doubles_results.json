@@ -1251,7 +1251,102 @@
     "team2": ["Utkarsh", "Akshat"],
     "score1": 11,
     "score2": 6
+  }
+             ,
+  {
+    "date": "2025-05-19",
+    "team1": ["Nihar", "Konark"],
+    "team2": ["Piyush", "Ishan"],
+    "score1": 11,
+    "score2": 6
+  }
+                ,
+  {
+    "date": "2025-05-19",
+    "team1": ["Nihar", "Konark"],
+    "team2": ["Piyush", "Ishan"],
+    "score1": 4,
+    "score2": 11
   } 
-    
+                ,
+  {
+    "date": "2025-05-19",
+    "team1": ["Nihar", "Konark"],
+    "team2": ["Piyush", "Ishan"],
+    "score1": 13,
+    "score2": 11
+  } 
+                ,
+  {
+    "date": "2025-05-19",
+    "team1": ["Nihar", "Piyush"],
+    "team2": ["Konark", "Ishan"],
+    "score1": 11,
+    "score2": 8
+  } 
+                   ,
+  {
+    "date": "2025-05-19",
+    "team1": ["Ameta", "Sangwan"],
+    "team2": ["Arora", "Pandey"],
+    "score1": 11,
+    "score2": 4
+  }
+                      ,
+  {
+    "date": "2025-05-19",
+    "team1": ["Ameta", "Sangwan"],
+    "team2": ["Arora", "Pandey"],
+    "score1": 11,
+    "score2": 4
+  }
+                      ,
+  {
+    "date": "2025-05-19",
+    "team1": ["Ameta", "Sangwan"],
+    "team2": ["Arora", "Pandey"],
+    "score1": 11,
+    "score2": 5
+  }
+                      ,
+  {
+    "date": "2025-05-19",
+    "team1": ["Ameta", "Pandey"],
+    "team2": ["Arora", "Sangwan"],
+    "score1": 11,
+    "score2": 4
+  }
+                         ,
+  {
+    "date": "2025-05-19",
+    "team1": ["Ameta", "Pandey"],
+    "team2": ["Arora", "Sangwan"],
+    "score1": 11,
+    "score2": 5
+  } 
+                         ,
+  {
+    "date": "2025-05-19",
+    "team1": ["Ameta", "Sangwan"],
+    "team2": ["Arora", "Pandey"],
+    "score1": 7,
+    "score2": 11
+  }
+                         ,
+  {
+    "date": "2025-05-19",
+    "team1": ["Ameta", "Sangwan"],
+    "team2": ["Arora", "Pandey"],
+    "score1": 11,
+    "score2": 7
+  }
+                         ,
+  {
+    "date": "2025-05-19",
+    "team1": ["Ameta", "Sangwan"],
+    "team2": ["Arora", "Pandey"],
+    "score1": 11,
+    "score2": 13
+  }
 ]
   
