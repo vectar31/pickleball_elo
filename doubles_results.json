@@ -1256,7 +1256,7 @@
   {
     "date": "2025-05-19",
     "team1": ["Nihar", "Konark"],
-    "team2": ["Piyush", "Ishan"],
+    "team2": ["Piyush", "Tyagi"],
     "score1": 11,
     "score2": 6
   }
@@ -1264,7 +1264,7 @@
   {
     "date": "2025-05-19",
     "team1": ["Nihar", "Konark"],
-    "team2": ["Piyush", "Ishan"],
+    "team2": ["Piyush", "Tyagi"],
     "score1": 4,
     "score2": 11
   } 
@@ -1272,7 +1272,7 @@
   {
     "date": "2025-05-19",
     "team1": ["Nihar", "Konark"],
-    "team2": ["Piyush", "Ishan"],
+    "team2": ["Piyush", "Tyagi"],
     "score1": 13,
     "score2": 11
   } 
@@ -1280,7 +1280,7 @@
   {
     "date": "2025-05-19",
     "team1": ["Nihar", "Piyush"],
-    "team2": ["Konark", "Ishan"],
+    "team2": ["Konark", "Tyagi"],
     "score1": 11,
     "score2": 8
   } 
@@ -1352,7 +1352,7 @@
   {
     "date": "2025-05-21",
     "team1": ["Nihar", "Akshat"],
-    "team2": ["Ishan", "Rishavdeep"],
+    "team2": ["Tyagi", "Rishavdeep"],
     "score1": 12,
     "score2": 10
   }
@@ -1360,7 +1360,7 @@
     {
     "date": "2025-05-21",
     "team1": ["Nihar", "Akshat"],
-    "team2": ["Ishan", "Rishavdeep"],
+    "team2": ["Tyagi", "Rishavdeep"],
     "score1": 12,
     "score2": 10
     }
@@ -1383,7 +1383,7 @@
     ,
     {
     "date": "2025-05-21",
-    "team1": ["Piyush", "Ishan"],
+    "team1": ["Piyush", "Tyagi"],
     "team2": ["Konark", "Rishavdeep"],
     "score1": 11,
     "score2": 8
@@ -1432,7 +1432,7 @@
     {
     "date": "2025-05-21",
     "team1": ["Piyush", "Salsabil"],
-    "team2": ["Swapnil", "Ishan"],
+    "team2": ["Swapnil", "Tyagi"],
     "score1": 12,
     "score2": 14
     }
@@ -1447,7 +1447,7 @@
     ,
     {
     "date": "2025-05-21",
-    "team1": ["Ishan", "Akshat"],
+    "team1": ["Tyagi", "Akshat"],
     "team2": ["Swapnil", "Rishavdeep"],
     "score1": 11,
     "score2": 8
@@ -1472,9 +1472,153 @@
     {
     "date": "2025-05-21",
     "team1": ["Konark", "Swapnil"],
-    "team2": ["Piyush", "Ishan"],
+    "team2": ["Piyush", "Tyagi"],
     "score1": 7,
     "score2": 11
+    }
+    ,
+    {
+    "date": "2025-05-22",
+    "team1": ["IG", "Harshal"],
+    "team2": ["Rishavdeep", "Tyagi"],
+    "score1": 11,
+    "score2": 5
+    }
+    ,
+    {
+    "date": "2025-05-22",
+    "team1": ["IG", "Harshal"],
+    "team2": ["Rishavdeep", "Piyush"],
+    "score1": 11,
+    "score2": 8
+    }
+    ,
+    {
+    "date": "2025-05-22",
+    "team1": ["IG", "Harshal"],
+    "team2": ["Rishavdeep", "Piyush"],
+    "score1": 11,
+    "score2": 8
+    }
+    ,
+    {
+    "date": "2025-05-22",
+    "team1": ["Tyagi", "Piyush"],
+    "team2": ["Nihar", "Konark"],
+    "score1": 11,
+    "score2": 4
+    }
+    ,
+    {
+    "date": "2025-05-22",
+    "team1": ["Tyagi", "Piyush"],
+    "team2": ["Nihar", "Konark"],
+    "score1": 5,
+    "score2": 11
+    }
+    ,
+    {
+    "date": "2025-05-22",
+    "team1": ["Tyagi", "Piyush"],
+    "team2": ["Nihar", "Konark"],
+    "score1": 14,
+    "score2": 12
+    }
+    ,
+    {
+    "date": "2025-05-22",
+    "team1": ["IG", "Harshal"],
+    "team2": ["Rishavdeep", "Amogh"],
+    "score1": 11,
+    "score2": 2
+    }
+     ,
+    {
+    "date": "2025-05-22",
+    "team1": ["IG", "Harshal"],
+    "team2": ["Rishavdeep", "Amogh"],
+    "score1": 5,
+    "score2": 11
+    }
+     ,
+    {
+    "date": "2025-05-22",
+    "team1": ["IG", "Harshal"],
+    "team2": ["Rishavdeep", "Amogh"],
+    "score1": 11,
+    "score2": 8
+    }
+    ,
+    {
+    "date": "2025-05-22",
+    "team1": ["Konark", "Tyagi"],
+    "team2": ["Harshal", "Amogh"],
+    "score1": 5,
+    "score2": 11
+    }
+    ,
+    {
+    "date": "2025-05-22",
+    "team1": ["Konark", "Tyagi"],
+    "team2": ["Harshal", "Amogh"],
+    "score1": 11,
+    "score2": 8
+    }
+    ,
+    {
+    "date": "2025-05-22",
+    "team1": ["Konark", "Tyagi"],
+    "team2": ["Harshal", "Amogh"],
+    "score1": 11,
+    "score2": 8
+    }
+    ,
+    {
+    "date": "2025-05-22",
+    "team1": ["Piyush", "Rishavdeep"],
+    "team2": ["Tyagi", "Nihar"],
+    "score1": 11,
+    "score2": 4
+    }
+    ,
+    {
+    "date": "2025-05-22",
+    "team1": ["Piyush", "Rishavdeep"],
+    "team2": ["Tyagi", "Nihar"],
+    "score1": 5,
+    "score2": 11
+    }
+    ,
+    {
+    "date": "2025-05-22",
+    "team1": ["Piyush", "Rishavdeep"],
+    "team2": ["Tyagi", "Nihar"],
+    "score1": 4,
+    "score2": 11
+    }
+    ,
+    {
+    "date": "2025-05-22",
+    "team1": ["Piyush", "Tyagi"],
+    "team2": ["Rishavdeep", "Nihar"],
+    "score1": 11,
+    "score2": 2
+    }
+    ,
+    {
+    "date": "2025-05-22",
+    "team1": ["Piyush", "Rishavdeep"],
+    "team2": ["Tyagi", "Nihar"],
+    "score1": 11,
+    "score2": 7
+    }
+    ,
+    {
+    "date": "2025-05-22",
+    "team1": ["Konark", "Tyagi"],
+    "team2": ["Harshal", "Amogh"],
+    "score1": 11,
+    "score2": 8
     }
 ]
   
