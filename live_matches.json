@@ -1476,4 +1476,52 @@
     "score1": 11,
     "score2": 9
   }
+  ,
+  {
+    "date": "2025-06-07",
+    "player1": "Amogh",
+    "player2": "Swapnil",
+    "score1": 11,
+    "score2": 1
+  }
+  ,
+  {
+    "date": "2025-06-07",
+    "player1": "Amogh",
+    "player2": "Arora",
+    "score1": 8,
+    "score2": 11
+  }
+  ,
+  {
+    "date": "2025-06-07",
+    "player1": "Swapnil",
+    "player2": "Arora",
+    "score1": 10,
+    "score2": 12
+  }
+  ,
+  {
+    "date": "2025-06-07",
+    "player1": "Piyush",
+    "player2": "Arora",
+    "score1": 9,
+    "score2": 11
+  }
+  ,
+  {
+    "date": "2025-06-07",
+    "player1": "Amogh",
+    "player2": "Utkarsh",
+    "score1": 11,
+    "score2": 6
+  }
+  ,
+  {
+    "date": "2025-06-07",
+    "player1": "Salsabil",
+    "player2": "Utkarsh",
+    "score1": 3,
+    "score2": 11
+  }
 ]
