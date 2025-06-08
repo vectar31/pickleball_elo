@@ -1996,6 +1996,118 @@
     "score1": 11,
     "score2": 9
     }
+    ,
+    {
+    "date": "2025-06-07",
+    "team1": ["Utkarsh", "Amogh"],
+    "team2": ["Shikhar", "Salsabil"],
+    "score1": 11,
+    "score2": 7
+    }
+    ,
+    {
+    "date": "2025-06-07",
+    "team1": ["Utkarsh", "Amogh"],
+    "team2": ["Shikhar", "Salsabil"],
+    "score1": 11,
+    "score2": 5
+    }
+    ,
+    {
+    "date": "2025-06-07",
+    "team1": ["Utkarsh", "Salsabil"],
+    "team2": ["Shikhar", "Piyush"],
+    "score1": 11,
+    "score2": 5
+    }
+    ,
+    {
+    "date": "2025-06-07",
+    "team1": ["Utkarsh", "Salsbil"],
+    "team2": ["Shikhar", "Swapnil"],
+    "score1": 9,
+    "score2": 11
+    }
+    ,
+    {
+    "date": "2025-06-07",
+    "team1": ["Utkarsh", "Nihar"],
+    "team2": ["Salsabil", "Swapnil"],
+    "score1": 11,
+    "score2": 6
+    }
+    ,
+    {
+    "date": "2025-06-07",
+    "team1": ["Amogh", "Swapnil"],
+    "team2": ["Nihar", "Shikhar"],
+    "score1": 11,
+    "score2": 8
+    }
+    ,
+    {
+    "date": "2025-06-07",
+    "team1": ["Amogh", "Salsabil"],
+    "team2": ["Utkarsh", "Shikhar"],
+    "score1": 11,
+    "score2": 4
+    }
+    ,
+    {
+    "date": "2025-06-07",
+    "team1": ["Amogh", "Salsabil"],
+    "team2": ["Utkarsh", "Shikhar"],
+    "score1": 11,
+    "score2": 5
+    }
+    ,
+    {
+    "date": "2025-06-07",
+    "team1": ["Amogh", "Salsabil"],
+    "team2": ["Utkarsh", "Shikhar"],
+    "score1": 4,
+    "score2": 11
+    }
+    ,
+    {
+    "date": "2025-06-07",
+    "team1": ["Arora", "Swapnil"],
+    "team2": ["Piyush", "Nihar"],
+    "score1": 11,
+    "score2": 8
+    }
+    ,
+    {
+    "date": "2025-06-07",
+    "team1": ["Arora", "Swapnil"],
+    "team2": ["Piyush", "Nihar"],
+    "score1": 8,
+    "score2": 11
+    }
+    ,
+    {
+    "date": "2025-06-07",
+    "team1": ["Arora", "Swapnil"],
+    "team2": ["Piyush", "Nihar"],
+    "score1": 12,
+    "score2": 10
+    }
+    ,
+    {
+    "date": "2025-06-07",
+    "team1": ["Arora", "Swapnil"],
+    "team2": ["Piyush", "Nihar"],
+    "score1": 11,
+    "score2": 8
+    }
+    ,
+    {
+    "date": "2025-06-07",
+    "team1": ["Arora", "Swapnil"],
+    "team2": ["Piyush", "Nihar"],
+    "score1": 9,
+    "score2": 11
+    }
     
 ]
   
