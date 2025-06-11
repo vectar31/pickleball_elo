@@ -1524,4 +1524,132 @@
     "score1": 3,
     "score2": 11
   }
+  ,
+  {
+    "date": "2025-06-10",
+    "player1": "Tyagi",
+    "player2": "Ameta",
+    "score1": 1,
+    "score2": 11
+  }
+  ,
+  {
+    "date": "2025-06-10",
+    "player1": "Sangwan",
+    "player2": "Ameta",
+    "score1": 1,
+    "score2": 11
+  }
+  ,
+  {
+    "date": "2025-06-10",
+    "player1": "Tyagi",
+    "player2": "Sangwan",
+    "score1": 11,
+    "score2": 9
+  }
+  ,
+  {
+    "date": "2025-06-10",
+    "player1": "Tyagi",
+    "player2": "Ameta",
+    "score1": 5,
+    "score2": 11
+  }
+  ,
+  {
+    "date": "2025-06-10",
+    "player1": "Sangwan",
+    "player2": "Ameta",
+    "score1": 5,
+    "score2": 11
+  }
+  ,
+  {
+    "date": "2025-06-10",
+    "player1": "Tyagi",
+    "player2": "Sangwan",
+    "score1": 13,
+    "score2": 11
+  }
+  ,
+  {
+    "date": "2025-06-10",
+    "player1": "Tyagi",
+    "player2": "Ameta",
+    "score1": 11,
+    "score2": 7
+  }
+  ,
+  {
+    "date": "2025-06-10",
+    "player1": "Sangwan",
+    "player2": "Ameta",
+    "score1": 6,
+    "score2": 11
+  }
+  ,
+  {
+    "date": "2025-06-10",
+    "player1": "Tyagi",
+    "player2": "Ameta",
+    "score1": 7,
+    "score2": 11
+  }
+  ,
+  {
+    "date": "2025-06-10",
+    "player1": "Piyush",
+    "player2": "Sanket",
+    "score1": 11,
+    "score2": 6
+  }
+  ,
+  {
+    "date": "2025-06-10",
+    "player1": "Piyush",
+    "player2": "Sanket",
+    "score1": 11,
+    "score2": 8
+  }
+  ,
+  {
+    "date": "2025-06-10",
+    "player1": "Piyush",
+    "player2": "Sanket",
+    "score1": 11,
+    "score2": 6
+  }
+  ,
+  {
+    "date": "2025-06-10",
+    "player1": "Piyush",
+    "player2": "Sanket",
+    "score1": 11,
+    "score2": 2
+  }
+  ,
+  {
+    "date": "2025-06-10",
+    "player1": "Piyush",
+    "player2": "Sanket",
+    "score1": 13,
+    "score2": 11
+  }
+  ,
+  {
+    "date": "2025-06-10",
+    "player1": "Piyush",
+    "player2": "Sanket",
+    "score1": 11,
+    "score2": 9
+  }
+  ,
+  {
+    "date": "2025-06-10",
+    "player1": "Piyush",
+    "player2": "Sanket",
+    "score1": 8,
+    "score2": 11
+  }
 ]
