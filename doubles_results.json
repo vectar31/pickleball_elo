@@ -2108,6 +2108,30 @@
     "score1": 9,
     "score2": 11
     }
+    ,
+    {
+    "date": "2025-06-11",
+    "team1": ["Kaushal", "Dhewal"],
+    "team2": ["Piyush", "Pinjore"],
+    "score1": 11,
+    "score2": 6
+    }
+    ,
+    {
+    "date": "2025-06-11",
+    "team1": ["Piyush", "Surya"],
+    "team2": ["Dhewal", "Arora"],
+    "score1": 11,
+    "score2": 5
+    }
+    ,
+    {
+    "date": "2025-06-12",
+    "team1": ["Swapnil", "Nihar"],
+    "team2": ["Shuvam", "Piyush"],
+    "score1": 2,
+    "score2": 11
+    }
     
 ]
   
