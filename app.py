@@ -68,12 +68,7 @@ df = df.sort_values("Rating", ascending=False).reset_index(drop=True)
 st.dataframe(df.style.format({"Rating": "{:.2f}"}), use_container_width=True)
 
 # Graph
-# Convert history to long-form DataFrame for seaborn
-# Plot using seaborn
 
-# Graph
-# Graph
-st.header("📈 Singles Elo Progress")
 
 # Convert history to long-form DataFrame for seaborn
 # Determine max match #
@@ -114,35 +109,6 @@ for player, series in history.items():
 
 
 graph_df = pd.DataFrame(graph_data)
-
-# Plot
-sns.set_theme(style="darkgrid")
-fig, ax = plt.subplots(figsize=(14, 6))
-
-sns.lineplot(
-    data=graph_df,
-    x="Match #",
-    y="Elo Rating",
-    hue="Player",
-    marker="o",
-    linewidth=2.5,
-    markersize=8,
-    ax=ax
-)
-
-# Make it pretty
-ax.set_title("🔥 Elo Ratings Per Match", fontsize=18, weight="bold", pad=15)
-ax.set_xlabel("Match #", fontsize=12)
-ax.set_ylabel("Elo Rating", fontsize=12)
-ax.legend(title="Player", bbox_to_anchor=(1.01, 1), loc='upper left', frameon=True)
-sns.despine(left=False, bottom=False)
-
-# Optional: lighten grid, adjust spacing
-ax.grid(True, linestyle="--", alpha=0.6)
-plt.tight_layout()
-
-st.pyplot(fig)
-
 
 # Optional: Detailed Elo graph for a single player
 st.subheader("🔍 Singles Elo History (One Player at a Time)")
@@ -238,8 +204,6 @@ else:
     st.dataframe(df_doubles.style.format({"Doubles Elo": "{:.2f}"}), use_container_width=True)
 
 
-# 📈 Doubles Elo Progress
-st.header("📈 Doubles Elo Progress Over Matches")
 
 # Determine max match number for doubles
 max_doubles_match_num = max(
@@ -283,30 +247,6 @@ for player, series in doubles_history.items():
 
 
 doubles_graph_df = pd.DataFrame(doubles_graph_data)
-
-if doubles_graph_df.empty:
-    st.write("No doubles history to plot.")
-else:
-    fig, ax = plt.subplots(figsize=(14, 6))
-    sns.lineplot(
-        data=doubles_graph_df,
-        x="Match #",
-        y="Doubles Elo",
-        hue="Player",
-        marker="o",
-        linewidth=2.5,
-        markersize=8,
-        ax=ax
-    )
-    ax.set_title("🎾 Doubles Elo Ratings Per Match", fontsize=18, weight="bold", pad=15)
-    ax.set_xlabel("Match #", fontsize=12)
-    ax.set_ylabel("Doubles Elo Rating", fontsize=12)
-    ax.legend(title="Player", bbox_to_anchor=(1.01, 1), loc='upper left', frameon=True)
-    sns.despine(left=False, bottom=False)
-    ax.grid(True, linestyle="--", alpha=0.6)
-    plt.tight_layout()
-    st.pyplot(fig)
-
 
 # Optional: Detailed Elo graph for a single player
 from statsmodels.nonparametric.smoothers_lowess import lowess
