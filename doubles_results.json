@@ -1952,7 +1952,7 @@
     {
     "date": "2025-06-06",
     "team1": ["Akshat", "Piyush"],
-    "team2": ["Alanker", "Somesh"],
+    "team2": ["Alankar", "Somesh"],
     "score1": 11,
     "score2": 9
     }
@@ -2210,6 +2210,46 @@
     "team1": ["Piyush", "Jatin"],
     "team2": ["Milind", "Sanket"],
     "score1": 7,
+    "score2": 11
+    }
+    ,
+    {
+    "date": "2025-06-15",
+    "team1": ["Sahdev", "Milind"],
+    "team2": ["Piyush", "Swapnil"],
+    "score1": 11,
+    "score2": 7
+    }
+    ,
+    {
+    "date": "2025-06-15",
+    "team1": ["Sahdev", "Milind"],
+    "team2": ["Piyush", "Swapnil"],
+    "score1": 5,
+    "score2": 11
+    }
+    ,
+    {
+    "date": "2025-06-15",
+    "team1": ["Sahdev", "Milind"],
+    "team2": ["Piyush", "Swapnil"],
+    "score1": 7,
+    "score2": 11
+    }
+    ,
+    {
+    "date": "2025-06-15",
+    "team1": ["Sahdev", "Milind"],
+    "team2": ["Piyush", "Swapnil"],
+    "score1": 11,
+    "score2": 5
+    }
+    ,
+    {
+    "date": "2025-06-15",
+    "team1": ["Sahdev", "Milind"],
+    "team2": ["Piyush", "Swapnil"],
+    "score1": 8,
     "score2": 11
     }
 ]
