@@ -2252,5 +2252,37 @@
     "score1": 8,
     "score2": 11
     }
+    ,
+    {
+    "date": "2025-06-16",
+    "team1": ["Pandey", "Arora"],
+    "team2": ["Ameta", "Nihar"],
+    "score1": 11,
+    "score2": 0
+    }
+    ,
+    {
+    "date": "2025-06-16",
+    "team1": ["Pandey", "Arora"],
+    "team2": ["Ameta", "Nihar"],
+    "score1": 11,
+    "score2": 7
+    }
+    ,
+    {
+    "date": "2025-06-16",
+    "team1": ["Pandey", "Ameta"],
+    "team2": ["Arora", "Nihar"],
+    "score1": 11,
+    "score2": 6
+    }
+    ,
+    {
+    "date": "2025-06-16",
+    "team1": ["Pandey", "Ameta"],
+    "team2": ["Arora", "Nihar"],
+    "score1": 7,
+    "score2": 11
+    }
 ]
   
