@@ -1820,4 +1820,36 @@
     "score1": 5,
     "score2": 11
   }
+  ,
+  {
+    "date": "2025-06-16",
+    "player1": "Pandey",
+    "player2": "Nihar",
+    "score1": 7,
+    "score2": 11
+  }
+  ,
+  {
+    "date": "2025-06-16",
+    "player1": "Pandey",
+    "player2": "Nihar",
+    "score1": 11,
+    "score2": 7
+  }
+  ,
+  {
+    "date": "2025-06-16",
+    "player1": "Ameta",
+    "player2": "Arora",
+    "score1": 11,
+    "score2": 5
+  }
+  ,
+  {
+    "date": "2025-06-16",
+    "player1": "Ameta",
+    "player2": "Arora",
+    "score1": 13,
+    "score2": 11
+  }
 ]
