@@ -1996,5 +1996,69 @@
     "score1": 11,
     "score2": 7
   }
+  ,
+  {
+    "date": "2025-06-28",
+    "player1": "Ameta",
+    "player2": "Tyagi",
+    "score1": 11,
+    "score2": 1
+  }
+  ,
+  {
+    "date": "2025-06-28",
+    "player1": "Arora",
+    "player2": "Tyagi",
+    "score1": 11,
+    "score2": 7
+  }
+  ,
+  {
+    "date": "2025-06-28",
+    "player1": "Ameta",
+    "player2": "Arora",
+    "score1": 11,
+    "score2": 7
+  }
+  ,
+  {
+    "date": "2025-06-28",
+    "player1": "Ameta",
+    "player2": "Tyagi",
+    "score1": 11,
+    "score2": 6
+  }
+  ,
+  {
+    "date": "2025-06-28",
+    "player1": "Arora",
+    "player2": "Tyagi",
+    "score1": 12,
+    "score2": 10
+  }
+  ,
+  {
+    "date": "2025-06-28",
+    "player1": "Ameta",
+    "player2": "Arora",
+    "score1": 2,
+    "score2": 11
+  }
+  ,
+  {
+    "date": "2025-06-28",
+    "player1": "Arora",
+    "player2": "Tyagi",
+    "score1": 13,
+    "score2": 11
+  }
+  ,
+  {
+    "date": "2025-06-28",
+    "player1": "Ameta",
+    "player2": "Tyagi",
+    "score1": 11,
+    "score2": 4
+  }
   
 ]
