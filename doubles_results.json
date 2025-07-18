@@ -2376,7 +2376,7 @@
     {
     "date": "2025-07-01",
     "team1": ["Sanket", "Akshat"],
-    "team2": ["Alankar", "Aniket[Mathur]"],
+    "team2": ["Alankar", "Aniket"],
     "score1": 11,
     "score2": 2
     }
@@ -2384,7 +2384,7 @@
     {
     "date": "2025-07-01",
     "team1": ["Sanket", "Kartikey"],
-    "team2": ["Alankar", "Aniket[Mathur]"],
+    "team2": ["Alankar", "Aniket"],
     "score1": 6,
     "score2": 11
     }
@@ -2392,14 +2392,14 @@
     {
     "date": "2025-07-01",
     "team1": ["Sanket", "Kartikey"],
-    "team2": ["Akshat", "Aniket[Mathur]"],
+    "team2": ["Akshat", "Aniket"],
     "score1": 11,
     "score2": 7
     }
     ,
     {
     "date": "2025-07-01",
-    "team1": ["Piyush", "Aniket[Mathur]"],
+    "team1": ["Piyush", "Aniket"],
     "team2": ["Akshat", "Sanket"],
     "score1": 11,
     "score2": 6
@@ -2407,7 +2407,7 @@
     ,
     {
     "date": "2025-07-01",
-    "team1": ["Piyush", "Aniket[Mathur]"],
+    "team1": ["Piyush", "Aniket"],
     "team2": ["Akshat", "Sanket"],
     "score1": 11,
     "score2": 2
@@ -2415,7 +2415,7 @@
     ,
     {
     "date": "2025-07-01",
-    "team1": ["Piyush", "Aniket[Mathur]"],
+    "team1": ["Piyush", "Aniket"],
     "team2": ["Akshat", "Sanket"],
     "score1": 11,
     "score2": 2
@@ -2424,7 +2424,7 @@
     {
     "date": "2025-07-01",
     "team1": ["Piyush", "Akshat"],
-    "team2": ["Aniket[Mathur]", "Sanket"],
+    "team2": ["Aniket", "Sanket"],
     "score1": 7,
     "score2": 11
     }
@@ -2432,7 +2432,7 @@
     {
     "date": "2025-07-01",
     "team1": ["Piyush", "Akshat"],
-    "team2": ["Aniket[Mathur]", "Sanket"],
+    "team2": ["Aniket", "Sanket"],
     "score1": 11,
     "score2": 6
     }
@@ -2457,6 +2457,78 @@
     "date": "2025-07-05",
     "team1": ["Piyush", "Sabari[Pykln]"],
     "team2": ["Amogh", "Harshal"],
+    "score1": 11,
+    "score2": 8
+    }
+    ,
+    {
+    "date": "2025-07-15",
+    "team1": ["Akshat", "Aditya"],
+    "team2": ["Kartikey", "Sanket"],
+    "score1": 11,
+    "score2": 8
+    }
+    ,
+    {
+    "date": "2025-07-15",
+    "team1": ["Akshat", "Alankar"],
+    "team2": ["Aditya", "Sanket"],
+    "score1": 14,
+    "score2": 12
+    }
+    ,
+    {
+    "date": "2025-07-15",
+    "team1": ["Alankar", "Aditya"],
+    "team2": ["Kartikey", "Sanket"],
+    "score1": 11,
+    "score2": 2
+    }
+    ,
+    {
+    "date": "2025-07-15",
+    "team1": ["Piyush", "Kartikey"],
+    "team2": ["Akshat", "Aniket"],
+    "score1": 11,
+    "score2": 8
+    }
+    ,
+    {
+    "date": "2025-07-15",
+    "team1": ["Piyush", "Aniket"],
+    "team2": ["Aditya", "Sanket"],
+    "score1": 9,
+    "score2": 11
+    }
+    ,
+    {
+    "date": "2025-07-15",
+    "team1": ["Aditya", "Sanket"],
+    "team2": ["Alankar", "Kartikey"],
+    "score1": 11,
+    "score2": 5
+    }
+    ,
+    {
+    "date": "2025-07-15",
+    "team1": ["Alankar", "Kartikey"],
+    "team2": ["Akshat", "Piyush"],
+    "score1": 11,
+    "score2": 7
+    }
+    ,
+    {
+    "date": "2025-07-15",
+    "team1": ["Aditya", "Sanket"],
+    "team2": ["Piyush", "Aniket"],
+    "score1": 9,
+    "score2": 11
+    }
+    ,
+    {
+    "date": "2025-07-15",
+    "team1": ["Piyush", "Kartikey"],
+    "team2": ["Akshat", "Aniket"],
     "score1": 11,
     "score2": 8
     }
