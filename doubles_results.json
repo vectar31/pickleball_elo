@@ -2460,7 +2460,78 @@
     "score1": 11,
     "score2": 8
     }
-    
+    ,
+    {
+    "date": "2025-07-15",
+    "team1": ["Akshat", "Aditya"],
+    "team2": ["Kartikey", "Sanket"],
+    "score1": 11,
+    "score2": 8
+    }
+    ,
+    {
+    "date": "2025-07-15",
+    "team1": ["Akshat", "Alankar"],
+    "team2": ["Aditya", "Sanket"],
+    "score1": 14,
+    "score2": 12
+    }
+    ,
+    {
+    "date": "2025-07-15",
+    "team1": ["Alankar", "Aditya"],
+    "team2": ["Kartikey", "Sanket"],
+    "score1": 11,
+    "score2": 2
+    }
+    ,
+    {
+    "date": "2025-07-15",
+    "team1": ["Piyush", "Kartikey"],
+    "team2": ["Akshat", "Aniket"],
+    "score1": 11,
+    "score2": 8
+    }
+    ,
+    {
+    "date": "2025-07-15",
+    "team1": ["Piyush", "Aniket"],
+    "team2": ["Aditya", "Sanket"],
+    "score1": 9,
+    "score2": 11
+    }
+    ,
+    {
+    "date": "2025-07-15",
+    "team1": ["Aditya", "Sanket"],
+    "team2": ["Alankar", "Kartikey"],
+    "score1": 11,
+    "score2": 5
+    }
+    ,
+    {
+    "date": "2025-07-15",
+    "team1": ["Alankar", "Kartikey"],
+    "team2": ["Akshat", "Piyush"],
+    "score1": 11,
+    "score2": 7
+    }
+    ,
+    {
+    "date": "2025-07-15",
+    "team1": ["Aditya", "Sanket"],
+    "team2": ["Piyush", "Aniket"],
+    "score1": 9,
+    "score2": 11
+    }
+    ,
+    {
+    "date": "2025-07-15",
+    "team1": ["Piyush", "Kartikey"],
+    "team2": ["Akshat", "Aniket"],
+    "score1": 11,
+    "score2": 8
+    }
     
 ]
   
