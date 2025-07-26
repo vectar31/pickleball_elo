@@ -2310,7 +2310,15 @@
   }
   ,
   {
-    "date": "2025-07-23",
+    "date": "2025-07-27",
+    "player1": "Arora",
+    "player2": "Ameta",
+    "score1": 13,
+    "score2": 11
+  }
+  ,
+  {
+    "date": "2025-07-27",
     "player1": "Arora",
     "player2": "Ameta",
     "score1": 13,
