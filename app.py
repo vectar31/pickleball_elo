@@ -64,7 +64,7 @@ st.header("📊 Singles Elo Ratings")
 df = pd.DataFrame([
     (p, ratings[p]) for p in ratings if p in active_players
 ], columns=["Player", "Rating"])
-df = df.sort_values("Rating", ascending=False).reset_index(drop=True)
+df = sort_with_promoter_last(df, sort_by="Rating", ascending=False)
 st.dataframe(df.style.format({"Rating": "{:.2f}"}), use_container_width=True)
 
 # Graph
