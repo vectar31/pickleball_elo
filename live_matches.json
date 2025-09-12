@@ -2645,6 +2645,61 @@
     "score1": 8,
     "score2": 11
   }
-  
+  ,
+  {
+    "date": "2025-09-09",
+    "player1": "Alankar",
+    "player2": "Piyush",
+    "score1": 11,
+    "score2": 8
+  }
+  ,
+  {
+    "date": "2025-09-11",
+    "player1": "Sabari[Pykln]",
+    "player2": "Alankar",
+    "score1": 11,
+    "score2": 5
+  }
+  ,
+  {
+    "date": "2025-09-11",
+    "player1": "Sabari[Pykln]",
+    "player2": "Piyush",
+    "score1": 11,
+    "score2": 8
+  }
+  ,
+  {
+    "date": "2025-09-11",
+    "player1": "Ameta",
+    "player2": "Arora",
+    "score1": 12,
+    "score2": 10
+  }
+  ,
+  {
+    "date": "2025-09-11",
+    "player1": "Ameta",
+    "player2": "Arora",
+    "score1": 12,
+    "score2": 14
+  }
+  ,
+  {
+    "date": "2025-09-11",
+    "player1": "Ameta",
+    "player2": "Arora",
+    "score1": 11,
+    "score2": 3
+  }
+  ,
+  {
+    "date": "2025-09-11",
+    "player1": "Amogh",
+    "player2": "Harshal",
+    "score1": 12,
+    "score2": 10
+  }
   
 ]
