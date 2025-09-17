@@ -2701,5 +2701,116 @@
     "score1": 12,
     "score2": 10
   }
-  
+  ,
+  {
+    "date": "2025-09-15",
+    "player1": "Ameta",
+    "player2": "Arora",
+    "score1": 8,
+    "score2": 11
+  }
+  ,
+  {
+    "date": "2025-09-15",
+    "player1": "Ameta",
+    "player2": "Arora",
+    "score1": 6,
+    "score2": 11
+  }
+  ,
+  {
+    "date": "2025-09-15",
+    "player1": "Ameta",
+    "player2": "Arora",
+    "score1": 11,
+    "score2": 9
+  }
+  ,
+  {
+    "date": "2025-09-16",
+    "player1": "Ameta",
+    "player2": "Arora",
+    "score1": 9,
+    "score2": 11
+  }
+  ,
+  {
+    "date": "2025-09-16",
+    "player1": "Ameta",
+    "player2": "Arora",
+    "score1": 11,
+    "score2": 9
+  }
+  ,
+  {
+    "date": "2025-09-16",
+    "player1": "Ameta",
+    "player2": "Arora",
+    "score1": 11,
+    "score2": 3
+  }
+  ,
+  {
+    "date": "2025-09-16",
+    "player1": "Piyush",
+    "player2": "Alankar",
+    "score1": 2,
+    "score2": 11
+  }
+  ,
+  {
+    "date": "2025-09-16",
+    "player1": "Piyush",
+    "player2": "Sanket",
+    "score1": 8,
+    "score2": 11
+  }
+  ,
+  {
+    "date": "2025-09-16",
+    "player1": "Piyush",
+    "player2": "Alankar",
+    "score1": 11,
+    "score2": 7
+  }
+  ,
+  {
+    "date": "2025-09-17",
+    "player1": "Harshal",
+    "player2": "Amogh",
+    "score1": 11,
+    "score2": 7
+  }
+  ,
+  {
+    "date": "2025-09-17",
+    "player1": "Harshal",
+    "player2": "Amogh",
+    "score1": 11,
+    "score2": 4
+  }
+  ,
+  {
+    "date": "2025-09-17",
+    "player1": "Harshal",
+    "player2": "Amogh",
+    "score1": 11,
+    "score2": 9
+  }
+  ,
+  {
+    "date": "2025-09-17",
+    "player1": "Harshal",
+    "player2": "Amogh",
+    "score1": 5,
+    "score2": 11
+  }
+  ,
+  {
+    "date": "2025-09-17",
+    "player1": "Harshal",
+    "player2": "Amogh",
+    "score1": 6,
+    "score2": 11
+  }
 ]
