@@ -135,21 +135,15 @@ single_player_df = single_player_df.merge(
 single_player_df["Player Match #"] = single_player_df["Player Match #"].fillna(method='ffill')
 
 # Apply LOESS smoothing to player's Elo trend
-smoothed = lowess(
-    exog=single_player_df["Player Match #"],
-    endog=single_player_df["Elo Rating"],
-    frac=0.3  # adjust smoothing factor if needed
-)
-
-# Plot smoothed Elo trend
 fig, ax = plt.subplots(figsize=(10, 4))
 
 ax.plot(
-    smoothed[:, 0],
-    smoothed[:, 1],
-    linewidth=2.5,
+    single_player_df["Player Match #"],
+    single_player_df["Elo Rating"],
+    marker="o",
+    linewidth=2,
     color="#67cfff",
-    label="Smoothed Elo Rating"
+    label="Elo Rating"
 )
 
 # Fill under the curve
