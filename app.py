@@ -146,13 +146,13 @@ ax.plot(
     label="Elo Rating"
 )
 
-# Fill under the curve
-ax.fill_between(
-    smoothed[:, 0],
-    smoothed[:, 1],
-    alpha=0.2,
-    color="#67cfff"
-)
+# # Fill under the curve
+# ax.fill_between(
+#     smoothed[:, 0],
+#     smoothed[:, 1],
+#     alpha=0.2,
+#     color="#67cfff"
+# )
 
 # Style
 ax.set_title(f"📈 Elo Progress: {selected_single_player}", fontsize=16, weight="bold")
