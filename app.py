@@ -160,10 +160,10 @@ ax.set_xlabel("Player's Match #", fontsize=12)  # Changed label to reflect playe
 ax.set_ylabel("Elo Rating", fontsize=12)
 
 # Dynamic Y-axis limits
-elo_min = smoothed[:, 1].min()
-elo_max = smoothed[:, 1].max()
-buffer = max(10, (elo_max - elo_min) * 0.1)
-ax.set_ylim(elo_min - buffer, elo_max + buffer)
+# elo_min = smoothed[:, 1].min()
+# elo_max = smoothed[:, 1].max()
+# buffer = max(10, (elo_max - elo_min) * 0.1)
+# ax.set_ylim(elo_min - buffer, elo_max + buffer)
 
 # Dark styling
 ax.grid(alpha=0.3)
