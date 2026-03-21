@@ -7,7 +7,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
-import database
+from app import database
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-change-in-production")
 ALGORITHM = "HS256"
