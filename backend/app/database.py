@@ -243,7 +243,7 @@ def update_player_profile(name: str, display_name: str = None, location: str = N
 
 # ── Singles Matches ───────────────────────────────────────────────────────────
 
-def get_singles_matches(status: str = None, player_name: str = None, limit: int = 20, cursor: int = None):
+def get_singles_matches(status: str = None, player_name: str = None, limit: int = 20, cursor: int = None, order: str = "desc"):
     with get_db() as conn:
         where, params = [], []
         if status:
@@ -258,7 +258,8 @@ def get_singles_matches(status: str = None, player_name: str = None, limit: int 
         sql = "SELECT * FROM singles_matches"
         if where:
             sql += " WHERE " + " AND ".join(where)
-        sql += f" ORDER BY id DESC LIMIT {int(limit) + 1}"
+        direction = "ASC" if order == "asc" else "DESC"
+        sql += f" ORDER BY id {direction} LIMIT {int(limit) + 1}"
         rows = conn.execute(sql, params).fetchall()
     return [dict(r) for r in rows]
 
@@ -301,7 +302,7 @@ def _row_to_doubles_match(r) -> dict:
     }
 
 
-def get_doubles_matches(status: str = None, player_name: str = None, limit: int = 20, cursor: int = None):
+def get_doubles_matches(status: str = None, player_name: str = None, limit: int = 20, cursor: int = None, order: str = "desc"):
     with get_db() as conn:
         where, params = [], []
         if status:
@@ -316,7 +317,8 @@ def get_doubles_matches(status: str = None, player_name: str = None, limit: int 
         sql = "SELECT * FROM doubles_matches"
         if where:
             sql += " WHERE " + " AND ".join(where)
-        sql += f" ORDER BY id DESC LIMIT {int(limit) + 1}"
+        direction = "ASC" if order == "asc" else "DESC"
+        sql += f" ORDER BY id {direction} LIMIT {int(limit) + 1}"
         rows = conn.execute(sql, params).fetchall()
     return [_row_to_doubles_match(r) for r in rows]
 

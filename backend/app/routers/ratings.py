@@ -13,8 +13,8 @@ def _accepted(matches):
 @router.get("/singles")
 def get_singles_ratings():
     database.auto_accept_expired(hours=24)
-    matches = _accepted(database.get_singles_matches())
-    players = database.get_all_players()
+    matches = _accepted(database.get_singles_matches(limit=100000, order="asc"))
+    players = [p["name"] for p in database.get_all_players()]
     ratings, _ = compute_ratings_from_data(matches, players)
     return sorted([{"player": p, "rating": r} for p, r in ratings.items()], key=lambda x: x["rating"], reverse=True)
 
@@ -22,6 +22,6 @@ def get_singles_ratings():
 @router.get("/doubles")
 def get_doubles_ratings():
     database.auto_accept_expired(hours=24)
-    matches = _accepted(database.get_doubles_matches())
+    matches = _accepted(database.get_doubles_matches(limit=100000, order="asc"))
     ratings, _ = compute_doubles_ratings_from_data(matches)
     return sorted([{"player": p, "rating": r} for p, r in ratings.items()], key=lambda x: x["rating"], reverse=True)

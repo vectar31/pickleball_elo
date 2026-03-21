@@ -17,8 +17,8 @@ def _player_stats(name: str) -> dict:
     database.auto_accept_expired()
     singles = _accepted(database.get_singles_matches(player_name=name, limit=10000))
     doubles = _accepted(database.get_doubles_matches(player_name=name, limit=10000))
-    all_singles = _accepted(database.get_singles_matches(limit=10000))
-    all_doubles = _accepted(database.get_doubles_matches(limit=10000))
+    all_singles = _accepted(database.get_singles_matches(limit=100000, order="asc"))
+    all_doubles = _accepted(database.get_doubles_matches(limit=100000, order="asc"))
     players = [p["name"] for p in database.get_all_players()]
 
     singles_ratings, _ = compute_ratings_from_data(all_singles, players)

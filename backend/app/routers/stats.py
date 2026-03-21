@@ -57,8 +57,8 @@ def _streak_info(history):
 @router.get("/singles")
 def get_singles_stats():
     database.auto_accept_expired(hours=24)
-    accepted = _accepted(database.get_singles_matches())
-    players = database.get_all_players()
+    accepted = _accepted(database.get_singles_matches(limit=100000, order="asc"))
+    players = [p["name"] for p in database.get_all_players()]
     ratings, _ = compute_ratings_from_data(accepted, players)
     raw = _compute_singles_stats(accepted)
 
@@ -88,7 +88,7 @@ def get_singles_stats():
 @router.get("/doubles")
 def get_doubles_stats():
     database.auto_accept_expired(hours=24)
-    accepted = _accepted(database.get_doubles_matches())
+    accepted = _accepted(database.get_doubles_matches(limit=100000, order="asc"))
     ratings, _ = compute_doubles_ratings_from_data(accepted)
 
     stats = defaultdict(lambda: {"wins": 0, "losses": 0, "points_won": 0, "points_lost": 0, "history": []})
@@ -139,7 +139,7 @@ def get_player_stats(name: str):
     database.auto_accept_expired(hours=24)
     accepted_singles = _accepted(database.get_singles_matches())
     accepted_doubles = _accepted(database.get_doubles_matches())
-    players = database.get_all_players()
+    players = [p["name"] for p in database.get_all_players()]
 
     singles_ratings, singles_history = compute_ratings_from_data(accepted_singles, players)
     doubles_ratings, doubles_history = compute_doubles_ratings_from_data(accepted_doubles)
