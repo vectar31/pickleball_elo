@@ -1,9 +1,26 @@
+import { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Button, Text, Surface } from 'react-native-paper';
+import { Button, Text, Surface, TextInput, HelperText } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useMutation } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/useAuth';
+import { loginWithPassword } from '@/services/api/auth';
 
-// TODO(api): wire up actual Google/Apple auth flows
 export default function LoginScreen() {
+  const { login } = useAuth();
+  const [name, setName] = useState('');
+
+  const mutation = useMutation({
+    mutationFn: () => loginWithPassword(name.trim(), 'pickleball'),
+    onSuccess: (data) => {
+      login(data.access_token, name.trim());
+    },
+  });
+
+  const errorMessage = mutation.isError
+    ? (mutation.error as any)?.response?.data?.detail ?? 'Sign in failed. Check your name and try again.'
+    : null;
+
   return (
     <Surface style={styles.container}>
       <View style={styles.hero}>
@@ -14,25 +31,26 @@ export default function LoginScreen() {
         </Text>
       </View>
 
-      <View style={styles.buttons}>
+      <View style={styles.form}>
+        <TextInput
+          label="Your name"
+          value={name}
+          onChangeText={setName}
+          autoCapitalize="words"
+          autoCorrect={false}
+          mode="outlined"
+          style={styles.input}
+        />
+        {errorMessage ? <HelperText type="error">{errorMessage}</HelperText> : null}
         <Button
           mode="contained"
-          icon="google"
-          onPress={() => {/* TODO(api): Google SSO */}}
+          onPress={() => mutation.mutate()}
+          loading={mutation.isPending}
+          disabled={mutation.isPending || !name.trim()}
           style={styles.button}
           contentStyle={styles.buttonContent}
         >
-          Continue with Google
-        </Button>
-
-        <Button
-          mode="outlined"
-          icon="apple"
-          onPress={() => {/* TODO(api): Apple Sign-In */}}
-          style={styles.button}
-          contentStyle={styles.buttonContent}
-        >
-          Continue with Apple
+          Sign In
         </Button>
       </View>
     </Surface>
@@ -44,7 +62,8 @@ const styles = StyleSheet.create({
   hero: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
   title: { fontWeight: 'bold', textAlign: 'center' },
   subtitle: { textAlign: 'center', opacity: 0.7 },
-  buttons: { gap: 12, paddingBottom: 32 },
+  form: { gap: 8, paddingBottom: 32 },
+  input: { marginBottom: 4 },
   button: { borderRadius: 12 },
   buttonContent: { paddingVertical: 8 },
 });
