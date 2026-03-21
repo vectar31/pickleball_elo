@@ -10,6 +10,7 @@ DB_PATH = os.environ.get("DB_PATH", "data/pickleball.db")
 # Single community for v1
 COMMUNITY_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 COMMUNITY_NAME = "Akhand Bharat Pickleball Club"
+ADMIN_PLAYERS = {"Swapnil", "Piyush"}
 
 
 def _ensure_dir():
@@ -92,6 +93,11 @@ def _migrate_schema(conn):
     _add_col(conn, "players", "location", "TEXT")
     _add_col(conn, "players", "photo_url", "TEXT")
     _add_col(conn, "players", "created_at", "TEXT")
+
+    # Admin role
+    _add_col(conn, "players", "is_admin", "INTEGER NOT NULL DEFAULT 0")
+    for admin in ADMIN_PLAYERS:
+        conn.execute("UPDATE players SET is_admin=1 WHERE name=?", (admin,))
 
     # Generate UUIDs for players that don't have one yet
     rows = conn.execute("SELECT name FROM players WHERE id IS NULL").fetchall()
@@ -217,6 +223,12 @@ def player_exists(name: str) -> bool:
     with get_db() as conn:
         row = conn.execute("SELECT 1 FROM players WHERE name=?", (name,)).fetchone()
     return row is not None
+
+
+def is_admin(name: str) -> bool:
+    with get_db() as conn:
+        row = conn.execute("SELECT is_admin FROM players WHERE name=?", (name,)).fetchone()
+    return bool(row and row["is_admin"])
 
 
 def update_player_profile(name: str, display_name: str = None, location: str = None, photo_url: str = None):

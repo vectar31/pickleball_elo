@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app import database
-from app.auth.jwt import get_current_user
+from app.auth.jwt import get_current_user, get_admin_user
 from app.models.schemas import SinglesMatchInput, DoublesMatchInput, DisputeInput
 
 router = APIRouter(prefix="/matches", tags=["matches"])
@@ -38,13 +38,11 @@ def get_singles_matches(
 
 
 @router.post("/singles", status_code=status.HTTP_201_CREATED)
-def add_singles_match(match: SinglesMatchInput, current_user: str = Depends(get_current_user)):
+def add_singles_match(match: SinglesMatchInput, current_user: str = Depends(get_admin_user)):
     if match.player1 == match.player2:
         raise HTTPException(status_code=400, detail="Players must be different")
     if match.score1 == match.score2:
         raise HTTPException(status_code=400, detail="Ties are not allowed")
-    if current_user not in (match.player1, match.player2):
-        raise HTTPException(status_code=403, detail="You can only submit matches you played in")
     database.insert_singles_match(match.date, match.player1, match.player2, match.score1, match.score2, submitted_by=current_user)
     return {"message": "Match submitted — awaiting opponent confirmation"}
 
@@ -65,13 +63,11 @@ def get_doubles_matches(
 
 
 @router.post("/doubles", status_code=status.HTTP_201_CREATED)
-def add_doubles_match(match: DoublesMatchInput, current_user: str = Depends(get_current_user)):
+def add_doubles_match(match: DoublesMatchInput, current_user: str = Depends(get_admin_user)):
     if set(match.team1) & set(match.team2):
         raise HTTPException(status_code=400, detail="A player cannot be on both teams")
     if match.score1 == match.score2:
         raise HTTPException(status_code=400, detail="Ties are not allowed")
-    if current_user not in match.team1 + match.team2:
-        raise HTTPException(status_code=403, detail="You can only submit matches you played in")
     database.insert_doubles_match(match.date, match.team1, match.team2, match.score1, match.score2, submitted_by=current_user)
     return {"message": "Match submitted — awaiting opponent confirmation"}
 
