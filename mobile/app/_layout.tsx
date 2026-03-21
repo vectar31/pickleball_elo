@@ -8,26 +8,23 @@ import { useAuth } from '@/hooks/useAuth';
 
 SplashScreen.preventAutoHideAsync();
 
-function AuthGate() {
-  const { hydrated, isAuthenticated } = useAuth();
-
-  if (!hydrated) return null;
-  if (!isAuthenticated) return <Redirect href="/(auth)/login" />;
-  // TODO(api): check profile completeness → redirect to /(auth)/onboarding if needed
-  return <Slot />;
-}
-
 export default function RootLayout() {
-  const { hydrated } = useAuth();
+  const { hydrated, isAuthenticated } = useAuth();
 
   useEffect(() => {
     if (hydrated) SplashScreen.hideAsync();
   }, [hydrated]);
 
+  if (!hydrated) return null;
+
   return (
     <QueryClientProvider client={queryClient}>
       <PaperProvider theme={AppTheme}>
-        <AuthGate />
+        {isAuthenticated ? (
+          <Slot />
+        ) : (
+          <Redirect href="/(auth)/login" />
+        )}
       </PaperProvider>
     </QueryClientProvider>
   );
