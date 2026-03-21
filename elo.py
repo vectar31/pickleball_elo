@@ -107,6 +107,69 @@ def add_match(player1, player2, score1, score2):
 
     return "✅ Match added!"
 
+def compute_ratings_from_data(matches, players):
+    """Pure computation — accepts data directly, no file I/O."""
+    ratings = {p: DEFAULT_RATING for p in players}
+    history = {p: [(0, DEFAULT_RATING)] for p in players}
+    match_number = 1
+
+    for match in matches:
+        p1, p2 = match["player1"], match["player2"]
+        s1, s2 = match["score1"], match["score2"]
+
+        for p in [p1, p2]:
+            if p not in ratings:
+                ratings[p] = DEFAULT_RATING
+                history[p] = [(0, DEFAULT_RATING)]
+
+        if s1 == s2:
+            continue
+
+        winner, loser = (p1, p2) if s1 > s2 else (p2, p1)
+        rw, rl = ratings[winner], ratings[loser]
+        rw_new, rl_new = update_elo(rw, rl, 1)
+
+        ratings[winner] = round(rw_new, 2)
+        ratings[loser] = round(rl_new, 2)
+        history[winner].append((match_number, round(rw_new, 2)))
+        history[loser].append((match_number, round(rl_new, 2)))
+        match_number += 1
+
+    return ratings, history
+
+
+def compute_doubles_ratings_from_data(matches):
+    """Pure computation for doubles — accepts data directly, no file I/O."""
+    ratings = defaultdict(lambda: DEFAULT_RATING)
+    history = defaultdict(lambda: [(0, DEFAULT_RATING)])
+    match_number = 1
+
+    for match in matches:
+        team1 = match["team1"]
+        team2 = match["team2"]
+        s1, s2 = match["score1"], match["score2"]
+
+        if s1 == s2 or set(team1) & set(team2):
+            continue
+
+        r1 = sum(ratings[p] for p in team1) / 2
+        r2 = sum(ratings[p] for p in team2) / 2
+        result = 1 if s1 > s2 else 0
+        r1_new, r2_new = update_elo(r1, r2, result)
+
+        for p in team1:
+            ratings[p] = round(ratings[p] + (r1_new - r1), 2)
+            history[p].append((match_number, ratings[p]))
+
+        for p in team2:
+            ratings[p] = round(ratings[p] + (r2_new - r2), 2)
+            history[p].append((match_number, ratings[p]))
+
+        match_number += 1
+
+    return dict(ratings), dict(history)
+
+
 def compute_doubles_ratings_and_history():
     matches = _load_json(DOUBLES_MATCHES_FILE)
     ratings = defaultdict(lambda: DEFAULT_RATING)
