@@ -1,0 +1,21 @@
+name: API Contract CI
+
+on:
+  push:
+    paths:
+      - 'docs/api-contracts/**'
+  pull_request:
+    paths:
+      - 'docs/api-contracts/**'
+
+jobs:
+  validate-spec:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate OpenAPI spec
+        run: |
+          pip install openapi-spec-validator
+          openapi-spec-validator docs/api-contracts/openapi.json
