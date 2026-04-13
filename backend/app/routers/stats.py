@@ -137,8 +137,8 @@ def get_player_stats(name: str):
         raise HTTPException(status_code=404, detail="Player not found")
 
     database.auto_accept_expired(hours=24)
-    accepted_singles = _accepted(database.get_singles_matches())
-    accepted_doubles = _accepted(database.get_doubles_matches())
+    accepted_singles = _accepted(database.get_singles_matches(limit=100000, order="asc"))
+    accepted_doubles = _accepted(database.get_doubles_matches(limit=100000, order="asc"))
     players = [p["name"] for p in database.get_all_players()]
 
     singles_ratings, singles_history = compute_ratings_from_data(accepted_singles, players)

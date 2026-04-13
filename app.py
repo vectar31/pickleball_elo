@@ -135,7 +135,7 @@ single_player_df = single_player_df.merge(
     on="Match #", 
     how="left"
 )
-single_player_df["Player Match #"] = single_player_df["Player Match #"].fillna(method='ffill')
+single_player_df["Player Match #"] = single_player_df["Player Match #"].ffill()
 
 # Apply LOESS smoothing to player's Elo trend
 fig, ax = plt.subplots(figsize=(10, 4))

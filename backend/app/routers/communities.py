@@ -52,7 +52,7 @@ def get_leaderboard(
     cutoff = _SEVEN_DAYS_AGO()
 
     if format == "singles":
-        all_matches = _accepted(database.get_singles_matches(limit=100000))
+        all_matches = _accepted(database.get_singles_matches(limit=100000, order="asc"))
         recent_matches = [m for m in all_matches if m.get("date", "") >= cutoff]
         old_matches = [m for m in all_matches if m.get("date", "") < cutoff]
 
@@ -84,7 +84,7 @@ def get_leaderboard(
             })
 
     else:  # doubles
-        all_matches = _accepted(database.get_doubles_matches(limit=100000))
+        all_matches = _accepted(database.get_doubles_matches(limit=100000, order="asc"))
         old_matches = [m for m in all_matches if m.get("date", "") < cutoff]
 
         current_ratings, _ = compute_doubles_ratings_from_data(all_matches)
