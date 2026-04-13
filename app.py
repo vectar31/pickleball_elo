@@ -905,7 +905,7 @@ player_df = player_df.merge(
     on="Match #", 
     how="left"
 )
-player_df["Player Match #"] = player_df["Player Match #"].fillna(method='ffill')
+player_df["Player Match #"] = player_df["Player Match #"].ffill()
 
 # Apply LOESS smoothing
 smoothed = lowess(
