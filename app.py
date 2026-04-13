@@ -1,1183 +1,995 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-import seaborn as sns
 import numpy as np
-from elo import load_players, compute_ratings_and_history, add_match
-from statsmodels.nonparametric.smoothers_lowess import lowess
-from elo import compute_doubles_ratings_and_history
-from statsmodels.nonparametric.smoothers_lowess import lowess
+import plotly.express as px
+import plotly.graph_objects as go
+from collections import defaultdict, Counter
+from datetime import datetime, timedelta
+from elo import load_players, compute_ratings_and_history, compute_doubles_ratings_and_history, compute_ratings_from_data
 
+# ── Page Config ───────────────────────────────────────────────────────────────
+st.set_page_config(page_title="Pickleball Elo Ratings", layout="wide", initial_sidebar_state="collapsed")
 
+ACCENT  = "#67cfff"
+GREEN   = "#4CAF50"
+GOLD    = "#FFD700"
+RED     = "#FF5252"
 
-def sort_with_promoter_last(df, sort_by, ascending=False):
-    df_sorted = df.sort_values(by=sort_by, ascending=ascending)
-    if "Piyush" in df_sorted["Player"].values:
-        piyush_row = df_sorted[df_sorted["Player"] == "Piyush"]
-        df_sorted = df_sorted[df_sorted["Player"] != "Piyush"]
-        df_sorted = pd.concat([df_sorted, piyush_row], ignore_index=True)
-    return df_sorted
-
-st.set_page_config(page_title="Pickleball Elo Ratings", layout="wide")
-st.title("🏓 Pickleball Elo Tracker")
-
+# ── Data Loading ──────────────────────────────────────────────────────────────
 ratings, history, matches = compute_ratings_and_history()
 doubles_ratings, doubles_history, doubles_matches = compute_doubles_ratings_and_history()
-
-# Save original history for visualization (prevent overwriting in loops)
 elo_history = history
 
-# Set of players who have played at least one match
 active_players = set()
-for match in matches:
-    active_players.update([match["player1"], match["player2"]])
+for m in matches:
+    active_players.update([m["player1"], m["player2"]])
 
-players = sorted(load_players())
+all_registered = sorted(load_players())
 
-# Sidebar: Match Entry
-# Sidebar: Club Stats Overview
-st.sidebar.header("📊 Club Stats")
+# ── Previous-session ratings (for rank-change arrows) ─────────────────────────
+if matches:
+    last_date = max(m["date"] for m in matches)
+    prev_matches = [m for m in matches if m["date"] < last_date]
+    if prev_matches:
+        prev_ratings, _ = compute_ratings_from_data(prev_matches, list(load_players()))
+    else:
+        prev_ratings = {p: 1000 for p in active_players}
 
-# Basic counts
-total_singles_matches = len(matches)
-total_doubles_matches = len(doubles_matches)
+    curr_ranked = sorted(active_players, key=lambda p: -ratings[p])
+    prev_ranked = sorted(active_players, key=lambda p: -prev_ratings.get(p, 1000))
+    curr_rank   = {p: i + 1 for i, p in enumerate(curr_ranked)}
+    prev_rank   = {p: i + 1 for i, p in enumerate(prev_ranked)}
+    rank_change = {p: prev_rank.get(p, len(active_players)) - curr_rank[p] for p in active_players}
+else:
+    rank_change = {}
 
-singles_players = set()
-for match in matches:
-    singles_players.update([match["player1"], match["player2"]])
+# ── This Week's Champion ──────────────────────────────────────────────────────
+today    = datetime.today().date()
+week_ago = today - timedelta(days=7)
 
-doubles_players = set()
-for match in doubles_matches:
-    doubles_players.update(match["team1"] + match["team2"])
+weekly_wins    = defaultdict(int)
+weekly_matches = defaultdict(int)
+for m in matches:
+    try:
+        md = datetime.strptime(m["date"], "%Y-%m-%d").date()
+    except Exception:
+        continue
+    if md >= week_ago:
+        p1, p2 = m["player1"], m["player2"]
+        weekly_matches[p1] += 1
+        weekly_matches[p2] += 1
+        if m["score1"] > m["score2"]:
+            weekly_wins[p1] += 1
+        else:
+            weekly_wins[p2] += 1
 
-# Display stats
-st.sidebar.markdown(f"""
-- 🧑 **Total Club Members:** {len(set(load_players()))}
-- 🏓 **Singles Players:** {len(singles_players)}
-- 👯 **Doubles Players:** {len(doubles_players)}
-- 🎮 **Singles Matches Played:** {total_singles_matches}
-- 🎮 **Doubles Matches Played:** {total_doubles_matches}
-- 🔁 **Total Matches:** {total_singles_matches + total_doubles_matches}
-""")
+weekly_eligible = {
+    p: weekly_wins[p] / weekly_matches[p]
+    for p in weekly_matches if weekly_matches[p] >= 3
+}
+champ_this_week = max(weekly_eligible, key=weekly_eligible.get) if weekly_eligible else None
 
+# ── Build interpolated Elo history DataFrame ──────────────────────────────────
+max_match_num = max((mn for series in elo_history.values() for mn, _ in series), default=0)
 
-# Ratings Table
-st.header("📊 Singles Elo Ratings")
-df = pd.DataFrame([
-    (p, ratings[p]) for p in ratings if p in active_players
-], columns=["Player", "Rating"])
-# df = sort_with_promoter_last(df, sort_by="Rating", ascending=False)
-df = df.sort_values(by="Rating", ascending=False).reset_index(drop=True)
-st.dataframe(df.style.format({"Rating": "{:.2f}"}), use_container_width=True)
-
-# Graph
-
-
-# Convert history to long-form DataFrame for seaborn
-# Determine max match #
-max_match_num = max([match_num for series in elo_history.values() for match_num, _ in series])
-
-# Pad history with last Elo
 graph_data = []
 for player, series in elo_history.items():
     if player not in active_players or not series:
         continue
-
-    # Add actual history
-    # Interpolate between matches
-    for i in range(len(series)):
-        match_num, rating = series[i]
-        graph_data.append({"Player": player, "Match #": match_num, "Elo Rating": rating})
-
-        # Add flat Elo for skipped matches (if any)
+    for i, (mn, rating) in enumerate(series):
+        graph_data.append({"Player": player, "Match #": mn, "Elo Rating": rating})
         if i < len(series) - 1:
-            next_match_num, _ = series[i + 1]
-            for skipped in range(match_num + 1, next_match_num):
-                graph_data.append({
-                    "Player": player,
-                    "Match #": skipped,
-                    "Elo Rating": rating  # same as current
-                })
-
-
-    # Add extension to max match
-    last_match_num, last_rating = series[-1]
-    if last_match_num < max_match_num:
-        graph_data.append({
-            "Player": player,
-            "Match #": max_match_num,
-            "Elo Rating": last_rating
-        })
-
-
+            next_mn = series[i + 1][0]
+            for skipped in range(mn + 1, next_mn):
+                graph_data.append({"Player": player, "Match #": skipped, "Elo Rating": rating})
+    last_mn, last_rating = series[-1]
+    if last_mn < max_match_num:
+        graph_data.append({"Player": player, "Match #": max_match_num, "Elo Rating": last_rating})
 
 graph_df = pd.DataFrame(graph_data)
 
-# Optional: Detailed Elo graph for a single player
-st.subheader("🔍 Singles Elo History (One Player at a Time)")
+# ── Singles stats computation ─────────────────────────────────────────────────
+def max_streak(seq, target):
+    mx = cnt = 0
+    for r in seq:
+        cnt = cnt + 1 if r == target else 0
+        mx  = max(mx, cnt)
+    return mx
 
-# Get unique players
-unique_singles_players = sorted(graph_df["Player"].unique())
-selected_single_player = st.selectbox("Select a player to view their Elo trend:", unique_singles_players, key="singles_player_smooth")
-
-# Filter and sort player's data
-single_player_df = graph_df[graph_df["Player"] == selected_single_player].sort_values("Match #")
-
-# Create a new match number sequence just for this player's matches
-player_matches = single_player_df[single_player_df["Elo Rating"] != single_player_df["Elo Rating"].shift()]  # Get only actual matches
-player_matches = player_matches.reset_index(drop=True)
-player_matches["Player Match #"] = player_matches.index + 1
-
-# Merge the new match numbers back to the full sequence
-single_player_df = single_player_df.merge(
-    player_matches[["Match #", "Player Match #"]], 
-    on="Match #", 
-    how="left"
-)
-single_player_df["Player Match #"] = single_player_df["Player Match #"].ffill()
-
-# Apply LOESS smoothing to player's Elo trend
-fig, ax = plt.subplots(figsize=(10, 4))
-
-ax.plot(
-    single_player_df["Player Match #"],
-    single_player_df["Elo Rating"],
-    marker="o",
-    linewidth=2,
-    color="#67cfff",
-    label="Elo Rating"
-)
-
-# # Fill under the curve
-# ax.fill_between(
-#     smoothed[:, 0],
-#     smoothed[:, 1],
-#     alpha=0.2,
-#     color="#67cfff"
-# )
-
-# Style
-ax.set_title(f"📈 Elo Progress: {selected_single_player}", fontsize=16, weight="bold")
-ax.set_xlabel("Player's Match #", fontsize=12)  # Changed label to reflect player-specific matches
-ax.set_ylabel("Elo Rating", fontsize=12)
-
-# Dynamic Y-axis limits
-# elo_min = smoothed[:, 1].min()
-# elo_max = smoothed[:, 1].max()
-# buffer = max(10, (elo_max - elo_min) * 0.1)
-# ax.set_ylim(elo_min - buffer, elo_max + buffer)
-
-# Dark styling
-ax.grid(alpha=0.3)
-ax.set_facecolor("#1e1e1e")
-fig.patch.set_facecolor("#1e1e1e")
-ax.tick_params(colors='white')
-ax.yaxis.label.set_color('white')
-ax.xaxis.label.set_color('white')
-ax.title.set_color('white')
-
-st.pyplot(fig)
-
-
-from collections import defaultdict
-
-st.header("📊 Singles Player Performance Stats")
-
-# Initialize stat containers
-stats = defaultdict(lambda: {
-    "Wins": 0,
-    "Losses": 0,
-    "Games": 0,
-    "Points Won": 0,
-    "Points Lost": 0,
-    "Current Streak": [],
-    "Streak History": []
+raw_stats = defaultdict(lambda: {
+    "Wins": 0, "Losses": 0, "Games": 0,
+    "Points Won": 0, "Points Lost": 0, "Streak History": []
 })
-
-# Populate stats
-for match in matches:
-    p1, p2 = match["player1"], match["player2"]
-    s1, s2 = match["score1"], match["score2"]
-
-    # Determine winner and loser
-    if s1 > s2:
-        winner, loser = p1, p2
-        w_score, l_score = s1, s2
-    else:
-        winner, loser = p2, p1
-        w_score, l_score = s2, s1
-
-    # Update wins/losses
-    stats[winner]["Wins"] += 1
-    stats[loser]["Losses"] += 1
-
-    # Update points
-    stats[p1]["Points Won"] += s1
-    stats[p1]["Points Lost"] += s2
-    stats[p2]["Points Won"] += s2
-    stats[p2]["Points Lost"] += s1
-
-    # Update games
-    stats[p1]["Games"] += 1
-    stats[p2]["Games"] += 1
-
-    # Update streaks
+for m in matches:
+    p1, p2, s1, s2 = m["player1"], m["player2"], m["score1"], m["score2"]
+    winner = p1 if s1 > s2 else p2
+    loser  = p2 if s1 > s2 else p1
+    raw_stats[winner]["Wins"]   += 1
+    raw_stats[loser]["Losses"]  += 1
+    raw_stats[p1]["Points Won"]  += s1;  raw_stats[p1]["Points Lost"] += s2
+    raw_stats[p2]["Points Won"]  += s2;  raw_stats[p2]["Points Lost"] += s1
+    raw_stats[p1]["Games"] += 1;  raw_stats[p2]["Games"] += 1
     for player in [p1, p2]:
-        result = "W" if player == winner else "L"
-        stats[player]["Streak History"].append(result)
+        raw_stats[player]["Streak History"].append("W" if player == winner else "L")
 
-# Calculate additional stats
 processed_stats = []
-for player, data in stats.items():
+for player, data in raw_stats.items():
     if player not in active_players:
         continue
-    total_mathches = data["Wins"] + data["Losses"]
-    wins = data["Wins"]
+    games  = data["Games"]
+    wins   = data["Wins"]
     losses = data["Losses"]
-    games = data["Games"]
-    pw = data["Points Won"]
-    pl = data["Points Lost"]
-    history = data["Streak History"]
-
-    # Current streak
-    current_streak = ""
-    if history:
-        last = history[-1]
-        count = 0
-        for res in reversed(history):
-            if res == last:
-                count += 1
-            else:
-                break
-        current_streak = f"{count}{last}"
-
-    # Longest win/loss streak
-    def max_streak(seq, target):
-        max_count = count = 0
-        for res in seq:
-            if res == target:
-                count += 1
-                max_count = max(max_count, count)
-            else:
-                count = 0
-        return max_count
-
-    longest_w = max_streak(history, "W")
-    longest_l = max_streak(history, "L")
-
+    seq    = data["Streak History"]
+    streak = ""
+    if seq:
+        last  = seq[-1]
+        cnt   = sum(1 for _ in (x for x in reversed(seq) if x == last))
+        # recount properly
+        cnt = 0
+        for r in reversed(seq):
+            if r == last: cnt += 1
+            else:         break
+        streak = f"{cnt}{last}"
     processed_stats.append({
-        "Player": player,
-        "Matches": total_mathches,
-        "Wins": wins,
-        "Losses": losses,
-        "W/L %": round(wins / games * 100, 1) if games > 0 else 0,
-        "Current Streak": current_streak,
-        "Longest Win Streak": longest_w,
-        "Longest Loss Streak": longest_l,
-        "Avg Points Won": round(pw / games, 1) if games > 0 else 0,
-        "Avg Points Lost": round(pl / games, 1) if games > 0 else 0,
+        "Player":              player,
+        "Matches":             games,
+        "Wins":                wins,
+        "Losses":              losses,
+        "W/L %":               round(wins / games * 100, 1) if games else 0,
+        "Current Streak":      streak,
+        "Longest Win Streak":  max_streak(seq, "W"),
+        "Longest Loss Streak": max_streak(seq, "L"),
+        "Avg Points Won":      round(data["Points Won"]  / games, 1) if games else 0,
+        "Avg Points Lost":     round(data["Points Lost"] / games, 1) if games else 0,
     })
 
-# Display as DataFrame
-stats_df = pd.DataFrame(processed_stats)
-stats_df = stats_df.sort_values("Wins", ascending=False).reset_index(drop=True)
-st.dataframe(stats_df, use_container_width=True)
+# ── SIDEBAR ───────────────────────────────────────────────────────────────────
+st.sidebar.header("📊 Club Stats")
+doubles_players = set()
+for m in doubles_matches:
+    doubles_players.update(m["team1"] + m["team2"])
 
-# Singles Match history
+st.sidebar.metric("Total Members",      len(set(all_registered)))
+st.sidebar.metric("Singles Players",    len(active_players))
+st.sidebar.metric("Doubles Players",    len(doubles_players))
+st.sidebar.metric("Singles Matches",    len(matches))
+st.sidebar.metric("Doubles Matches",    len(doubles_matches))
+st.sidebar.metric("Total Matches",      len(matches) + len(doubles_matches))
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# HEADER
+# ═══════════════════════════════════════════════════════════════════════════════
+st.title("🏓 Pickleball Elo Tracker")
+
+if champ_this_week:
+    wins_w   = weekly_wins[champ_this_week]
+    played_w = weekly_matches[champ_this_week]
+    wr_w     = round(weekly_eligible[champ_this_week] * 100)
+    st.success(
+        f"🏆 **This Week's Champion: {champ_this_week}** — "
+        f"{wins_w}W / {played_w - wins_w}L ({wr_w}% win rate this week)"
+    )
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 1. SINGLES LEADERBOARD (with rank change)
+# ═══════════════════════════════════════════════════════════════════════════════
+st.header("🏆 Singles Elo Rankings")
+
+leaderboard_rows = []
+for i, player in enumerate(sorted(active_players, key=lambda p: -ratings[p]), 1):
+    delta = rank_change.get(player, 0)
+    arrow = f"↑{delta}" if delta > 0 else (f"↓{abs(delta)}" if delta < 0 else "—")
+    ps    = next((s for s in processed_stats if s["Player"] == player), {})
+    leaderboard_rows.append({
+        "Rank":           i,
+        "Player":         player,
+        "ELO":            round(ratings[player]),
+        "Rank Change":    arrow,
+        "Matches":        ps.get("Matches", 0),
+        "Win %":          ps.get("W/L %", 0),
+        "Streak":         ps.get("Current Streak", ""),
+    })
+
+st.dataframe(pd.DataFrame(leaderboard_rows), use_container_width=True, hide_index=True)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 2. SINGLE-PLAYER ELO JOURNEY (Plotly, with peak annotation)
+# ═══════════════════════════════════════════════════════════════════════════════
+st.subheader("🔍 Singles Elo History")
+
+unique_singles_players = sorted(graph_df["Player"].unique())
+_default_single = unique_singles_players.index("Arora") if "Arora" in unique_singles_players else 0
+selected_single = st.selectbox("Select a player:", unique_singles_players, index=_default_single, key="singles_player_smooth")
+
+spdf = graph_df[graph_df["Player"] == selected_single].sort_values("Match #")
+actual_matches = spdf[spdf["Elo Rating"] != spdf["Elo Rating"].shift()].reset_index(drop=True)
+actual_matches["Player Match #"] = actual_matches.index + 1
+spdf = spdf.merge(actual_matches[["Match #", "Player Match #"]], on="Match #", how="left")
+spdf["Player Match #"] = spdf["Player Match #"].ffill()
+
+elo_vals  = actual_matches["Elo Rating"].values
+match_nos = actual_matches["Player Match #"].values
+
+annotations = []
+if len(elo_vals) > 0:
+    peak_idx = int(np.argmax(elo_vals))
+    annotations.append(dict(
+        x=float(match_nos[peak_idx]), y=float(elo_vals[peak_idx]),
+        text=f"🏔 Peak {elo_vals[peak_idx]:.0f}",
+        showarrow=True, arrowhead=2,
+        bgcolor=GOLD, font=dict(color="black", size=11),
+        bordercolor=GOLD
+    ))
+
+fig = go.Figure()
+fig.add_trace(go.Scatter(
+    x=spdf["Player Match #"], y=spdf["Elo Rating"],
+    mode="lines+markers",
+    line=dict(color=ACCENT, width=2),
+    marker=dict(size=4),
+    name="Elo",
+    hovertemplate="Match %{x}<br>ELO: %{y:.0f}<extra></extra>"
+))
+_elo_min = float(spdf["Elo Rating"].min())
+_elo_max = float(spdf["Elo Rating"].max())
+_elo_buf = max(15, (_elo_max - _elo_min) * 0.08)
+fig.update_layout(
+    title=f"📈 Elo Journey: {selected_single}",
+    xaxis_title="Player's Match #", yaxis_title="Elo Rating",
+    yaxis=dict(range=[_elo_min - _elo_buf, _elo_max + _elo_buf]),
+    template="plotly_dark", annotations=annotations, hovermode="x unified"
+)
+st.plotly_chart(fig, use_container_width=True)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 3. TOP PLAYERS ELO PROGRESSION
+# ═══════════════════════════════════════════════════════════════════════════════
+st.subheader("🏅 Top Players ELO Progression")
+
+top_n       = min(5, len(active_players))
+top_players = [p for p, _ in sorted([(p, ratings[p]) for p in active_players], key=lambda x: -x[1])[:top_n]]
+colors_seq  = px.colors.qualitative.Set2
+
+fig = go.Figure()
+for idx, player in enumerate(top_players):
+    ph = elo_history[player]
+    fig.add_trace(go.Scatter(
+        x=[mn for mn, _ in ph], y=[r for _, r in ph],
+        mode="lines+markers", name=player,
+        line=dict(color=colors_seq[idx % len(colors_seq)], width=2.5),
+        marker=dict(size=5),
+        hovertemplate=f"{player}<br>Match %{{x}}<br>ELO: %{{y:.0f}}<extra></extra>"
+    ))
+fig.update_layout(
+    title="Top Players ELO Journey", xaxis_title="Match #", yaxis_title="ELO",
+    template="plotly_dark", hovermode="x unified"
+)
+st.plotly_chart(fig, use_container_width=True)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 4. HEAD-TO-HEAD DOMINANCE MATRIX
+# ═══════════════════════════════════════════════════════════════════════════════
+st.subheader("🎯 Head-to-Head Dominance Matrix")
+st.caption("Win % of the row player against the column player. Green = dominates, Red = struggles.")
+
+# Limit to players with ≥ 5 matches for readability
+matrix_players = sorted([
+    p for p in active_players
+    if sum(1 for m in matches if m["player1"] == p or m["player2"] == p) >= 5
+])
+
+z_vals     = []
+hover_text = []
+
+for p1 in matrix_players:
+    row_z, row_h = [], []
+    for p2 in matrix_players:
+        if p1 == p2:
+            row_z.append(None)
+            row_h.append("")
+        else:
+            h2h = [
+                m for m in matches
+                if (m["player1"] == p1 and m["player2"] == p2) or
+                   (m["player1"] == p2 and m["player2"] == p1)
+            ]
+            if not h2h:
+                row_z.append(None)
+                row_h.append(f"{p1} vs {p2}<br>No matches yet")
+            else:
+                wins = sum(
+                    1 for m in h2h
+                    if (m["player1"] == p1 and m["score1"] > m["score2"]) or
+                       (m["player2"] == p1 and m["score2"] > m["score1"])
+                )
+                pct = round(wins / len(h2h) * 100, 1)
+                row_z.append(pct)
+                row_h.append(f"{p1} vs {p2}<br>Win%: {pct:.0f}%<br>Matches: {len(h2h)}")
+    z_vals.append(row_z)
+    hover_text.append(row_h)
+
+fig = go.Figure(data=go.Heatmap(
+    z=z_vals, x=matrix_players, y=matrix_players,
+    colorscale="RdYlGn", zmid=50,
+    text=[[f"{v:.0f}%" if v is not None else "" for v in row] for row in z_vals],
+    texttemplate="%{text}",
+    hovertext=hover_text, hoverinfo="text",
+    showscale=True, colorbar=dict(title="Win %"),
+    zmin=0, zmax=100,
+))
+fig.update_layout(
+    title="H2H Win % (row beats column)",
+    template="plotly_dark",
+    xaxis=dict(tickangle=45),
+    height=max(400, len(matrix_players) * 28)
+)
+st.plotly_chart(fig, use_container_width=True)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 5. ELO BAR CHART RACE (animated)
+# ═══════════════════════════════════════════════════════════════════════════════
+st.subheader("🏎️ ELO Bar Chart Race")
+st.caption("Hit ▶ Play to watch the ELO standings evolve match by match.")
+
+race_players = [
+    p for p, _ in sorted(
+        [(p, ratings[p]) for p in active_players if len(elo_history[p]) > 2],
+        key=lambda x: -x[1]
+    )[:12]
+]
+
+palette      = px.colors.qualitative.Set3
+colors_race  = {p: palette[i % len(palette)] for i, p in enumerate(race_players)}
+
+def elo_at(player, match_num):
+    elo = 1000.0
+    for mn, r in elo_history[player]:
+        if mn <= match_num:
+            elo = r
+        else:
+            break
+    return elo
+
+# Sample frames (every 2 matches, always include final)
+step       = max(1, max_match_num // 60)
+frame_nums = list(range(0, max_match_num + 1, step))
+if max_match_num not in frame_nums:
+    frame_nums.append(max_match_num)
+
+x_min = min(800, min(ratings.values()) - 50)
+x_max = max(ratings.values()) + 120
+
+def make_bar_data(fn):
+    fd = sorted([(p, elo_at(p, fn)) for p in race_players], key=lambda x: x[1])
+    return [d[0] for d in fd], [d[1] for d in fd]
+
+init_players, init_elos = make_bar_data(0)
+
+frames = []
+for fn in frame_nums:
+    fp, fe = make_bar_data(fn)
+    frames.append(go.Frame(
+        data=[go.Bar(
+            x=fe, y=fp, orientation="h",
+            marker_color=[colors_race[p] for p in fp],
+            text=[f"{e:.0f}" for e in fe], textposition="outside",
+        )],
+        name=str(fn),
+        layout=go.Layout(title_text=f"ELO Standings — Match #{fn}")
+    ))
+
+fig = go.Figure(
+    data=[go.Bar(
+        x=init_elos, y=init_players, orientation="h",
+        marker_color=[colors_race[p] for p in init_players],
+        text=[f"{e:.0f}" for e in init_elos], textposition="outside",
+    )],
+    frames=frames,
+    layout=go.Layout(
+        title="ELO Bar Chart Race",
+        template="plotly_dark",
+        height=500,
+        xaxis=dict(range=[x_min, x_max], title="ELO", fixedrange=True),
+        yaxis=dict(fixedrange=True),
+        updatemenus=[dict(
+            type="buttons", showactive=False,
+            y=1.18, x=0.5, xanchor="center",
+            buttons=[
+                dict(label="▶ Play",  method="animate",
+                     args=[None, {"frame": {"duration": 120, "redraw": True}, "fromcurrent": True}]),
+                dict(label="⏸ Pause", method="animate",
+                     args=[[None], {"frame": {"duration": 0, "redraw": False}, "mode": "immediate"}])
+            ]
+        )],
+        sliders=[dict(
+            active=0,
+            steps=[dict(
+                method="animate",
+                args=[[str(fn)], {"frame": {"duration": 0, "redraw": True}, "mode": "immediate"}],
+                label=str(fn)
+            ) for fn in frame_nums],
+            x=0.05, y=0, xanchor="left", yanchor="top", len=0.95,
+            currentvalue=dict(prefix="Match: ", font=dict(size=13)),
+        )]
+    )
+)
+st.plotly_chart(fig, use_container_width=True)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 6. PLAYER COMPARISON TOOL
+# ═══════════════════════════════════════════════════════════════════════════════
+st.subheader("🔬 Player Comparison Tool")
+
+sorted_active = sorted(active_players)
+default_p1 = "Arora" if "Arora" in active_players else sorted_active[0]
+default_p2 = "Ameta" if "Ameta" in active_players else (sorted_active[1] if len(sorted_active) > 1 else sorted_active[0])
+
+col1, col2 = st.columns(2)
+with col1:
+    p1_sel = st.selectbox("Player 1:", sorted_active, index=sorted_active.index(default_p1), key="compare1")
+with col2:
+    p2_sel = st.selectbox("Player 2:", sorted_active, index=sorted_active.index(default_p2), key="compare2")
+
+if p1_sel != p2_sel:
+    p1s = next((s for s in processed_stats if s["Player"] == p1_sel), None)
+    p2s = next((s for s in processed_stats if s["Player"] == p2_sel), None)
+
+    if p1s and p2s:
+        col1, col2, col3 = st.columns([1, 2, 1])
+
+        with col1:
+            st.markdown(f"### {p1_sel}")
+            st.metric("ELO",    f"{ratings[p1_sel]:.0f}")
+            st.metric("Wins",   p1s["Wins"])
+            st.metric("Win %",  f"{p1s['W/L %']:.1f}%")
+            st.metric("Matches", p1s["Matches"])
+
+        with col3:
+            st.markdown(f"### {p2_sel}")
+            st.metric("ELO",    f"{ratings[p2_sel]:.0f}")
+            st.metric("Wins",   p2s["Wins"])
+            st.metric("Win %",  f"{p2s['W/L %']:.1f}%")
+            st.metric("Matches", p2s["Matches"])
+
+        with col2:
+            min_elo = min(ratings.values())
+            max_elo = max(ratings.values())
+            elo_range = max_elo - min_elo or 1
+
+            def norm(v, mn, mx): return (v - mn) / (mx - mn) * 100 if mx > mn else 50
+
+            cats   = ["ELO", "Win Rate", "Avg Pts Won", "Longest Win Streak", "Matches Played"]
+            p1_vals = [
+                norm(ratings[p1_sel], min_elo, max_elo),
+                p1s["W/L %"],
+                (p1s["Avg Points Won"] / 11) * 100,
+                min(p1s["Longest Win Streak"] / 10 * 100, 100),
+                min(p1s["Matches"] / 50 * 100, 100),
+            ]
+            p2_vals = [
+                norm(ratings[p2_sel], min_elo, max_elo),
+                p2s["W/L %"],
+                (p2s["Avg Points Won"] / 11) * 100,
+                min(p2s["Longest Win Streak"] / 10 * 100, 100),
+                min(p2s["Matches"] / 50 * 100, 100),
+            ]
+
+            fig = go.Figure()
+            fig.add_trace(go.Scatterpolar(
+                r=p1_vals, theta=cats, fill="toself",
+                name=p1_sel, line_color="#2196F3"
+            ))
+            fig.add_trace(go.Scatterpolar(
+                r=p2_vals, theta=cats, fill="toself",
+                name=p2_sel, line_color="#FF5722"
+            ))
+            fig.update_layout(
+                polar=dict(radialaxis=dict(range=[0, 100], showticklabels=False)),
+                template="plotly_dark", showlegend=True,
+                margin=dict(t=40, b=40)
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+        # H2H record
+        st.markdown("### 🤜🤛 Head-to-Head Record")
+        h2h = [
+            m for m in matches
+            if (m["player1"] == p1_sel and m["player2"] == p2_sel) or
+               (m["player1"] == p2_sel and m["player2"] == p1_sel)
+        ]
+        if h2h:
+            p1_wins = sum(
+                1 for m in h2h
+                if (m["player1"] == p1_sel and m["score1"] > m["score2"]) or
+                   (m["player2"] == p1_sel and m["score2"] > m["score1"])
+            )
+            c1, c2, c3 = st.columns(3)
+            c1.metric(f"{p1_sel} Wins", p1_wins)
+            c2.metric("Total Matches",  len(h2h))
+            c3.metric(f"{p2_sel} Wins", len(h2h) - p1_wins)
+        else:
+            st.info("These players haven't faced each other yet!")
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 7. RECENT FORM
+# ═══════════════════════════════════════════════════════════════════════════════
+st.subheader("🔥 Recent Form (Last 10 Matches)")
+
+recent_form_data = []
+for player in active_players:
+    pm = [m for m in matches if m["player1"] == player or m["player2"] == player]
+    if len(pm) >= 10:
+        last_10 = pm[-10:]
+        wins = sum(
+            1 for m in last_10
+            if (m["player1"] == player and m["score1"] > m["score2"]) or
+               (m["player2"] == player and m["score2"] > m["score1"])
+        )
+        wr = wins / len(last_10) * 100
+        form = "🔥 Hot" if wr >= 70 else "⚡ Solid" if wr >= 50 else "📉 Cooling" if wr >= 30 else "🧊 Cold"
+        recent_form_data.append({
+            "Player":       player,
+            "Last 10 W-L":  f"{wins}-{len(last_10)-wins}",
+            "Win Rate %":   round(wr, 1),
+            "Form":         form,
+        })
+
+if recent_form_data:
+    form_df = pd.DataFrame(recent_form_data).sort_values("Win Rate %", ascending=False).reset_index(drop=True)
+    st.dataframe(form_df, use_container_width=True, hide_index=True)
+else:
+    st.info("Not enough data yet (need players with ≥10 matches).")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 9. PERFORMANCE METRICS DASHBOARD
+# ═══════════════════════════════════════════════════════════════════════════════
+st.subheader("🎯 Performance Metrics Dashboard")
+
+perf_rows = []
+for player in active_players:
+    ph = elo_history[player]
+    if len(ph) < 2:
+        continue
+    elos    = [r for _, r in ph[1:]]
+    changes = [elos[i] - elos[i - 1] for i in range(1, len(elos))]
+    perf_rows.append({
+        "Player":      player,
+        "Current ELO": round(ratings[player], 1),
+        "Peak ELO":    round(max(elos), 1),
+        "vs Peak":     round(ratings[player] - max(elos), 1),
+        "Consistency": round(max(0.0, 100 - float(np.std(elos))), 1),
+        "Biggest Gain": f"+{max(changes):.1f}" if changes else "—",
+        "Biggest Loss": f"{min(changes):.1f}"  if changes else "—",
+    })
+
+perf_df = pd.DataFrame(perf_rows)
+tab1, tab2 = st.tabs(["📊 All Metrics", "🏔️ Current vs Peak ELO"])
+
+with tab1:
+    st.dataframe(
+        perf_df.sort_values("Current ELO", ascending=False),
+        use_container_width=True, hide_index=True
+    )
+
+with tab2:
+    top10 = perf_df.sort_values("Peak ELO", ascending=False).head(10)
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=top10["Player"], y=top10["Current ELO"], name="Current ELO", marker_color="#2196F3"))
+    fig.add_trace(go.Bar(x=top10["Player"], y=top10["Peak ELO"],    name="Peak ELO",    marker_color=GOLD))
+    fig.update_layout(
+        barmode="group", template="plotly_dark",
+        title="Current vs Peak ELO (Top 10)", xaxis_tickangle=45
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 10. MATCH COMPETITIVENESS
+# ═══════════════════════════════════════════════════════════════════════════════
+st.subheader("⚔️ Match Competitiveness")
+
+score_diffs = [abs(m["score1"] - m["score2"]) for m in matches]
+col1, col2  = st.columns([2, 1])
+
+with col1:
+    fig = px.histogram(
+        x=score_diffs,
+        nbins=max(score_diffs) - min(score_diffs) + 1 if score_diffs else 10,
+        color_discrete_sequence=[GREEN],
+        template="plotly_dark",
+        title="Score Differential Distribution",
+        labels={"x": "Score Differential", "y": "Matches"},
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+with col2:
+    close    = sum(1 for d in score_diffs if d <= 2)
+    blowouts = sum(1 for d in score_diffs if d >= 5)
+    st.metric("Close Matches (≤2 pts)", f"{close} ({close/len(score_diffs)*100:.1f}%)")
+    st.metric("Blowouts (≥5 pts)",      f"{blowouts} ({blowouts/len(score_diffs)*100:.1f}%)")
+    st.metric("Avg Score Diff",         f"{np.mean(score_diffs):.1f} pts")
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 11. SCORING PROFILE (Points Map)
+# ═══════════════════════════════════════════════════════════════════════════════
+st.subheader("📊 Scoring Profile")
+st.caption(
+    "**Avg points conceded in wins** — lower means more dominant victories. "
+    "**Avg score in losses** — higher means more competitive even when losing. "
+    "Sorted by ELO."
+)
+
+pts_rows = []
+for player in active_players:
+    conceded_in_wins  = []   # opponent's score when this player wins
+    scored_in_losses  = []   # this player's score when they lose
+    for m in matches:
+        if m["player1"] == player:
+            if m["score1"] > m["score2"]:
+                conceded_in_wins.append(m["score2"])   # opponent score
+            else:
+                scored_in_losses.append(m["score1"])   # own score in loss
+        elif m["player2"] == player:
+            if m["score2"] > m["score1"]:
+                conceded_in_wins.append(m["score1"])   # opponent score
+            else:
+                scored_in_losses.append(m["score2"])   # own score in loss
+    if conceded_in_wins or scored_in_losses:
+        pts_rows.append({
+            "Player":                   player,
+            "Avg Conceded in Wins":     round(float(np.mean(conceded_in_wins)),  1) if conceded_in_wins  else None,
+            "Avg Score in Losses":      round(float(np.mean(scored_in_losses)), 1) if scored_in_losses else None,
+            "ELO":                      ratings[player],
+        })
+
+pts_df = pd.DataFrame(pts_rows).sort_values("ELO", ascending=False)
+fig = go.Figure()
+fig.add_trace(go.Bar(
+    x=pts_df["Player"], y=pts_df["Avg Conceded in Wins"],
+    name="Avg Conceded in Wins (lower = more dominant)",
+    marker_color="#FF9800"
+))
+fig.add_trace(go.Bar(
+    x=pts_df["Player"], y=pts_df["Avg Score in Losses"],
+    name="Avg Score in Losses (higher = more competitive)",
+    marker_color="#2196F3"
+))
+fig.update_layout(
+    barmode="group", template="plotly_dark",
+    title="Scoring Profile (sorted by ELO)", xaxis_tickangle=45,
+    yaxis_title="Points"
+)
+st.plotly_chart(fig, use_container_width=True)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 12. CLUB RIVALRY NETWORK
+# ═══════════════════════════════════════════════════════════════════════════════
+st.subheader("🕸️ Club Rivalry Network")
+st.caption("Node size & color = ELO. Edge thickness = matches played between the two.")
+
+h2h_pairs = defaultdict(lambda: {"matches": 0})
+for m in matches:
+    key = tuple(sorted([m["player1"], m["player2"]]))
+    h2h_pairs[key]["matches"] += 1
+
+net_players = list(active_players)
+n           = len(net_players)
+angles      = np.linspace(0, 2 * np.pi, n, endpoint=False)
+pos         = {p: (float(np.cos(a)), float(np.sin(a))) for p, a in zip(net_players, angles)}
+
+edge_traces = []
+for (p1, p2), data in h2h_pairs.items():
+    if p1 not in pos or p2 not in pos:
+        continue
+    x0, y0 = pos[p1]
+    x1, y1 = pos[p2]
+    width   = min(1 + data["matches"] * 0.6, 7)
+    edge_traces.append(go.Scatter(
+        x=[x0, x1, None], y=[y0, y1, None],
+        mode="lines",
+        line=dict(width=width, color="rgba(103,207,255,0.25)"),
+        hoverinfo="skip"
+    ))
+
+min_r = min(ratings.values())
+max_r = max(ratings.values())
+r_range = max_r - min_r or 1
+
+node_trace = go.Scatter(
+    x=[pos[p][0] for p in net_players],
+    y=[pos[p][1] for p in net_players],
+    mode="markers+text",
+    text=net_players,
+    textposition="top center",
+    marker=dict(
+        size=[12 + (ratings[p] - min_r) / r_range * 28 for p in net_players],
+        color=[ratings[p] for p in net_players],
+        colorscale="Viridis", showscale=True,
+        colorbar=dict(title="ELO"),
+    ),
+    hovertext=[f"{p}<br>ELO: {ratings[p]:.0f}" for p in net_players],
+    hoverinfo="text"
+)
+
+fig = go.Figure(data=edge_traces + [node_trace])
+fig.update_layout(
+    title="Club Rivalry Network",
+    template="plotly_dark", showlegend=False, height=650,
+    xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+    yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+)
+st.plotly_chart(fig, use_container_width=True)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 13. ELO DISTRIBUTION
+# ═══════════════════════════════════════════════════════════════════════════════
+st.subheader("🎯 ELO Distribution & Tiers")
+
+active_ratings_list = [ratings[p] for p in active_players]
+tiers = {
+    "Elite":        (1100, float("inf"), GOLD),
+    "Advanced":     (1050, 1100,         "#C0C0C0"),
+    "Intermediate": (1000, 1050,         "#CD7F32"),
+    "Beginner":     (0,    1000,         "#87CEEB"),
+}
+
+col1, col2 = st.columns([2, 1])
+with col1:
+    fig = px.histogram(
+        x=active_ratings_list, nbins=15,
+        color_discrete_sequence=[ACCENT],
+        template="plotly_dark",
+        title="Player Rating Distribution",
+        labels={"x": "ELO Rating", "y": "Players"},
+    )
+    st.plotly_chart(fig, use_container_width=True)
+with col2:
+    st.markdown("### 🏆 Player Tiers")
+    for tier_name, (lo, hi, _) in tiers.items():
+        cnt = sum(1 for r in active_ratings_list if lo <= r < hi)
+        label = f"{lo}+" if hi == float("inf") else f"{lo}–{hi}"
+        st.markdown(f"**{tier_name}** ({label}): {cnt} players")
+    st.markdown("---")
+    st.metric("Median ELO", f"{np.median(active_ratings_list):.1f}")
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 14. ACTIVITY & ENGAGEMENT
+# ═══════════════════════════════════════════════════════════════════════════════
+st.subheader("📅 Activity Over Time")
+
+match_dates = []
+for m in matches:
+    try:
+        match_dates.append(datetime.strptime(m["date"], "%Y-%m-%d").date())
+    except Exception:
+        continue
+
+if match_dates:
+    date_counts = Counter(match_dates)
+    dates_sorted = sorted(date_counts.keys())
+
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        fig = px.bar(
+            x=dates_sorted, y=[date_counts[d] for d in dates_sorted],
+            labels={"x": "Date", "y": "Matches"},
+            color_discrete_sequence=[GREEN],
+            template="plotly_dark",
+            title="Match Activity Over Time",
+        )
+        fig.update_xaxes(tickangle=45)
+        st.plotly_chart(fig, use_container_width=True)
+    with col2:
+        st.markdown("### Most Active Players")
+        pm_counts = {p: sum(1 for m in matches if m["player1"] == p or m["player2"] == p) for p in active_players}
+        for i, (p, cnt) in enumerate(sorted(pm_counts.items(), key=lambda x: -x[1])[:5], 1):
+            st.markdown(f"{i}. **{p}**: {cnt} matches")
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 15. PLAYER STATS TABLE
+# ═══════════════════════════════════════════════════════════════════════════════
+st.subheader("📊 Full Player Stats")
+stats_df = pd.DataFrame(processed_stats).sort_values("Wins", ascending=False).reset_index(drop=True)
+st.dataframe(stats_df, use_container_width=True, hide_index=True)
+
+# 16. Match History (collapsed)
 with st.expander("📜 Singles Match History", expanded=False):
-    st.markdown("## 📜 Singles Match History")
     match_df = pd.DataFrame(matches)
     if not match_df.empty:
         st.dataframe(match_df[::-1], use_container_width=True)
     else:
         st.write("No matches yet.")
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# DOUBLES SECTION
+# ═══════════════════════════════════════════════════════════════════════════════
+st.markdown("""<hr style="border:none;height:2px;background:#FF4B4B;margin:30px 0;">""", unsafe_allow_html=True)
+st.header("👯 Doubles")
 
-# ============================================================
-# ADVANCED SINGLES VISUALIZATIONS
-# ============================================================
-
-st.markdown("""
-<hr style="border: none; height: 2px; background-color: #4CAF50; margin: 30px 0;">
-""", unsafe_allow_html=True)
-
-st.header("📈 Advanced Singles Analytics")
-
-# 6. PLAYER COMPARISON TOOL (Moved to top for quick access)
-st.subheader("🔬 Player Comparison Tool")
-
-col1, col2 = st.columns(2)
-
-# Set default players (check if they exist in active players)
-sorted_players = sorted(active_players)
-default_player1 = "Arora" if "Arora" in active_players else sorted_players[0]
-default_player2 = "Ameta" if "Ameta" in active_players else (sorted_players[1] if len(sorted_players) > 1 else sorted_players[0])
-
-with col1:
-    player1_compare = st.selectbox("Select Player 1:", sorted_players, 
-                                   index=sorted_players.index(default_player1), 
-                                   key="compare1")
-with col2:
-    player2_compare = st.selectbox("Select Player 2:", sorted_players, 
-                                   index=sorted_players.index(default_player2), 
-                                   key="compare2")
-
-if player1_compare != player2_compare:
-    col1, col2, col3 = st.columns([1, 2, 1])
-    
-    # Get stats for both players
-    p1_stats = next((s for s in processed_stats if s["Player"] == player1_compare), None)
-    p2_stats = next((s for s in processed_stats if s["Player"] == player2_compare), None)
-    
-    if p1_stats and p2_stats:
-        with col1:
-            st.markdown(f"### {player1_compare}")
-            st.metric("ELO", f"{ratings[player1_compare]:.0f}")
-            st.metric("Wins", p1_stats["Wins"])
-            st.metric("Win %", f"{p1_stats['W/L %']:.1f}%")
-            st.metric("Avg Pts Won", p1_stats["Avg Points Won"])
-        
-        with col2:
-            # Radar chart
-            categories = ['ELO\n(normalized)', 'Win Rate', 'Avg Pts Won', 'Longest\nWin Streak', 'Matches\nPlayed']
-            
-            # Normalize values to 0-100 scale
-            max_elo = max(ratings.values())
-            min_elo = min(ratings.values())
-            p1_values = [
-                ((ratings[player1_compare] - min_elo) / (max_elo - min_elo)) * 100,
-                p1_stats['W/L %'],
-                (p1_stats['Avg Points Won'] / 11) * 100,
-                min(p1_stats['Longest Win Streak'] / 10 * 100, 100),
-                min(p1_stats['Matches'] / 50 * 100, 100)
-            ]
-            p2_values = [
-                ((ratings[player2_compare] - min_elo) / (max_elo - min_elo)) * 100,
-                p2_stats['W/L %'],
-                (p2_stats['Avg Points Won'] / 11) * 100,
-                min(p2_stats['Longest Win Streak'] / 10 * 100, 100),
-                min(p2_stats['Matches'] / 50 * 100, 100)
-            ]
-            
-            # Create radar chart
-            angles = np.linspace(0, 2 * np.pi, len(categories), endpoint=False).tolist()
-            p1_values += p1_values[:1]
-            p2_values += p2_values[:1]
-            angles += angles[:1]
-            
-            fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(projection='polar'))
-            ax.plot(angles, p1_values, 'o-', linewidth=2, label=player1_compare, color='#2196F3')
-            ax.fill(angles, p1_values, alpha=0.25, color='#2196F3')
-            ax.plot(angles, p2_values, 'o-', linewidth=2, label=player2_compare, color='#FF5722')
-            ax.fill(angles, p2_values, alpha=0.25, color='#FF5722')
-            
-            ax.set_xticks(angles[:-1])
-            ax.set_xticklabels(categories, size=9)
-            ax.set_ylim(0, 100)
-            ax.set_yticks([25, 50, 75, 100])
-            ax.set_yticklabels(['25', '50', '75', '100'], size=8)
-            ax.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1))
-            ax.grid(True)
-            
-            # Dark mode
-            ax.set_facecolor('#1e1e1e')
-            fig.patch.set_facecolor('#1e1e1e')
-            ax.tick_params(colors='white')
-            ax.spines['polar'].set_color('white')
-            ax.xaxis.label.set_color('white')
-            for label in ax.get_xticklabels():
-                label.set_color('white')
-            for label in ax.get_yticklabels():
-                label.set_color('white')
-            legend = ax.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1))
-            legend.get_frame().set_facecolor('#2e2e2e')
-            for text in legend.get_texts():
-                text.set_color('white')
-            
-            st.pyplot(fig)
-        
-        with col3:
-            st.markdown(f"### {player2_compare}")
-            st.metric("ELO", f"{ratings[player2_compare]:.0f}")
-            st.metric("Wins", p2_stats["Wins"])
-            st.metric("Win %", f"{p2_stats['W/L %']:.1f}%")
-            st.metric("Avg Pts Won", p2_stats["Avg Points Won"])
-        
-        # Head to head
-        st.markdown("### 🤜🤛 Head-to-Head Record")
-        h2h_matches = [m for m in matches if 
-                      (m["player1"] == player1_compare and m["player2"] == player2_compare) or
-                      (m["player1"] == player2_compare and m["player2"] == player1_compare)]
-        
-        if h2h_matches:
-            p1_wins = sum(1 for m in h2h_matches if 
-                         (m["player1"] == player1_compare and m["score1"] > m["score2"]) or
-                         (m["player2"] == player1_compare and m["score2"] > m["score1"]))
-            p2_wins = len(h2h_matches) - p1_wins
-            
-            col1, col2, col3 = st.columns(3)
-            col1.metric(f"{player1_compare} Wins", p1_wins)
-            col2.metric("Total Matches", len(h2h_matches))
-            col3.metric(f"{player2_compare} Wins", p2_wins)
-        else:
-            st.info("These players haven't faced each other yet!")
-
-
-# 1. ELO DISTRIBUTION & TIERS
-st.subheader("🎯 ELO Distribution & Player Tiers")
-
-col1, col2 = st.columns([2, 1])
-
-with col1:
-    # Create histogram
-    fig, ax = plt.subplots(figsize=(10, 5))
-    
-    active_ratings = [ratings[p] for p in active_players]
-    
-    # Define tier boundaries
-    tiers = {
-        'Elite': (1100, max(active_ratings) + 50, '#FFD700'),
-        'Advanced': (1050, 1100, '#C0C0C0'),
-        'Intermediate': (1000, 1050, '#CD7F32'),
-        'Beginner': (min(active_ratings) - 50, 1000, '#87CEEB')
-    }
-    
-    # Create histogram
-    n, bins, patches = ax.hist(active_ratings, bins=15, edgecolor='black', alpha=0.7)
-    
-    # Color bars by tier
-    for patch, left_edge in zip(patches, bins[:-1]):
-        for tier_name, (tier_min, tier_max, color) in tiers.items():
-            if tier_min <= left_edge < tier_max:
-                patch.set_facecolor(color)
-                break
-    
-    ax.set_xlabel('ELO Rating', fontsize=12, fontweight='bold')
-    ax.set_ylabel('Number of Players', fontsize=12, fontweight='bold')
-    ax.set_title('Player Rating Distribution', fontsize=14, fontweight='bold')
-    ax.grid(axis='y', alpha=0.3)
-    
-    # Dark mode styling
-    ax.set_facecolor('#1e1e1e')
-    fig.patch.set_facecolor('#1e1e1e')
-    ax.tick_params(colors='white')
-    ax.yaxis.label.set_color('white')
-    ax.xaxis.label.set_color('white')
-    ax.title.set_color('white')
-    ax.spines['bottom'].set_color('white')
-    ax.spines['left'].set_color('white')
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    
-    st.pyplot(fig)
-
-with col2:
-    st.markdown("### 🏆 Player Tiers")
-    
-    # Count players in each tier
-    tier_counts = {}
-    for tier_name, (tier_min, tier_max, color) in tiers.items():
-        count = sum(1 for r in active_ratings if tier_min <= r < tier_max)
-        tier_counts[tier_name] = count
-    
-    # Display tier breakdown
-    for tier_name in ['Elite', 'Advanced', 'Intermediate', 'Beginner']:
-        count = tier_counts[tier_name]
-        tier_min, tier_max, color = tiers[tier_name]
-        st.markdown(f"**{tier_name}** ({tier_min}-{tier_max}): {count} players")
-    
-    # Stats
-    st.markdown("---")
-    st.metric("Median ELO", f"{np.median(active_ratings):.1f}")
-
-
-# 2. TOP PLAYERS PROGRESSION
-st.subheader("🏅 Top Players ELO Progression")
-
-# Get top 5 players by current rating
-top_n = min(5, len(active_players))
-# Sort active players by their current ratings
-top_players_sorted = sorted([(p, ratings[p]) for p in active_players], key=lambda x: x[1], reverse=True)
-top_players = [p for p, r in top_players_sorted[:top_n]]
-
-# Plot
-fig, ax = plt.subplots(figsize=(12, 6))
-
-colors = plt.cm.tab10(np.linspace(0, 1, top_n))
-
-for idx, player in enumerate(top_players):
-    player_history = elo_history[player]
-    if len(player_history) > 1:
-        match_nums = [m for m, r in player_history]
-        elos = [r for m, r in player_history]
-        ax.plot(match_nums, elos, marker='o', linewidth=2.5, 
-                label=player, color=colors[idx], alpha=0.8)
-
-ax.set_xlabel('Match Number', fontsize=12, fontweight='bold')
-ax.set_ylabel('ELO Rating', fontsize=12, fontweight='bold')
-ax.set_title('Top Players ELO Journey', fontsize=14, fontweight='bold')
-ax.legend(loc='best', framealpha=0.9, fontsize=9)
-ax.grid(alpha=0.3)
-
-# Dark mode styling
-ax.set_facecolor('#1e1e1e')
-fig.patch.set_facecolor('#1e1e1e')
-ax.tick_params(colors='white')
-ax.yaxis.label.set_color('white')
-ax.xaxis.label.set_color('white')
-ax.title.set_color('white')
-ax.spines['bottom'].set_color('white')
-ax.spines['left'].set_color('white')
-ax.spines['top'].set_visible(False)
-ax.spines['right'].set_visible(False)
-legend = ax.legend(loc='best', framealpha=0.9, fontsize=9)
-legend.get_frame().set_facecolor('#2e2e2e')
-for text in legend.get_texts():
-    text.set_color('white')
-
-st.pyplot(fig)
-
-
-# 3. RECENT FORM INDICATOR
-st.subheader("🔥 Recent Form (Last 10 Matches)")
-
-# Calculate recent form for all active players (only those with 10+ matches)
-recent_form_data = []
-for player in active_players:
-    player_matches = [m for m in matches if m["player1"] == player or m["player2"] == player]
-    
-    # Only include players who have played at least 10 matches
-    if len(player_matches) >= 10:
-        last_10 = player_matches[-10:]
-        
-        wins = sum(1 for m in last_10 if (m["player1"] == player and m["score1"] > m["score2"]) or 
-                                         (m["player2"] == player and m["score2"] > m["score1"]))
-        win_rate = (wins / len(last_10)) * 100
-        
-        # Form indicator
-        if win_rate >= 70:
-            form = "🔥 Hot"
-        elif win_rate >= 50:
-            form = "⚡ Solid"
-        elif win_rate >= 30:
-            form = "📉 Cooling"
-        else:
-            form = "🧊 Cold"
-        
-        recent_form_data.append({
-            "Player": player,
-            "Last 10 W-L": f"{wins}-{len(last_10)-wins}",
-            "Win Rate %": round(win_rate, 1),
-            "Form": form
-        })
-
-form_df = pd.DataFrame(recent_form_data)
-form_df = form_df.sort_values("Win Rate %", ascending=False).reset_index(drop=True)
-
-st.dataframe(form_df, use_container_width=True)
-
-
-# 5. MATCH COMPETITIVENESS ANALYSIS
-st.subheader("⚔️ Match Competitiveness Analysis")
-
-col1, col2 = st.columns(2)
-
-# Calculate score differentials
-score_diffs = []
-for match in matches:
-    diff = abs(match["score1"] - match["score2"])
-    score_diffs.append(diff)
-
-with col1:
-    # Score differential distribution
-    fig, ax = plt.subplots(figsize=(6, 4))
-    ax.hist(score_diffs, bins=range(0, max(score_diffs)+2), 
-            edgecolor='black', color='#4CAF50', alpha=0.7)
-    ax.set_xlabel('Score Differential', fontsize=10, fontweight='bold')
-    ax.set_ylabel('Number of Matches', fontsize=10, fontweight='bold')
-    ax.set_title('How Close Are the Matches?', fontsize=11, fontweight='bold')
-    ax.grid(axis='y', alpha=0.3)
-    
-    # Dark mode
-    ax.set_facecolor('#1e1e1e')
-    fig.patch.set_facecolor('#1e1e1e')
-    ax.tick_params(colors='white')
-    ax.yaxis.label.set_color('white')
-    ax.xaxis.label.set_color('white')
-    ax.title.set_color('white')
-    ax.spines['bottom'].set_color('white')
-    ax.spines['left'].set_color('white')
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    
-    st.pyplot(fig)
-
-with col2:
-    st.markdown("### 📊 Match Stats")
-    
-    close_matches = sum(1 for d in score_diffs if d <= 2)
-    blowouts = sum(1 for d in score_diffs if d >= 5)
-    avg_diff = np.mean(score_diffs)
-    
-    st.metric("Close Matches (≤2 pts)", f"{close_matches} ({close_matches/len(score_diffs)*100:.1f}%)")
-    st.metric("Blowouts (≥5 pts)", f"{blowouts} ({blowouts/len(score_diffs)*100:.1f}%)")
-    st.metric("Avg Score Differential", f"{avg_diff:.1f} points")
-
-
-# 7. ACTIVITY & ENGAGEMENT
-st.subheader("📅 Activity & Engagement")
-
-# Parse dates and create activity data
-from datetime import datetime, timedelta
-import calendar
-
-match_dates = []
-for match in matches:
-    try:
-        date_obj = datetime.strptime(match["date"], "%Y-%m-%d")
-        match_dates.append(date_obj)
-    except:
-        continue
-
-if match_dates:
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        # Activity timeline
-        from collections import Counter
-        date_counts = Counter([d.date() for d in match_dates])
-        
-        fig, ax = plt.subplots(figsize=(10, 4))
-        dates = sorted(date_counts.keys())
-        counts = [date_counts[d] for d in dates]
-        
-        ax.bar(dates, counts, color='#4CAF50', alpha=0.7, edgecolor='black')
-        ax.set_xlabel('Date', fontsize=10, fontweight='bold')
-        ax.set_ylabel('Matches Played', fontsize=10, fontweight='bold')
-        ax.set_title('Match Activity Over Time', fontsize=12, fontweight='bold')
-        ax.grid(axis='y', alpha=0.3)
-        plt.xticks(rotation=45, ha='right')
-        
-        # Dark mode
-        ax.set_facecolor('#1e1e1e')
-        fig.patch.set_facecolor('#1e1e1e')
-        ax.tick_params(colors='white')
-        ax.yaxis.label.set_color('white')
-        ax.xaxis.label.set_color('white')
-        ax.title.set_color('white')
-        ax.spines['bottom'].set_color('white')
-        ax.spines['left'].set_color('white')
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        
-        plt.tight_layout()
-        st.pyplot(fig)
-    
-    with col2:
-        st.markdown("### 📊 Activity Stats")
-        
-        # Most active players
-        player_match_counts = {}
-        for player in active_players:
-            count = sum(1 for m in matches if m["player1"] == player or m["player2"] == player)
-            player_match_counts[player] = count
-        
-        top_4_active = sorted(player_match_counts.items(), key=lambda x: x[1], reverse=True)[:4]
-        
-        st.markdown("**Most Active Players:**")
-        for i, (player, count) in enumerate(top_4_active, 1):
-            st.markdown(f"{i}. **{player}**: {count} matches")
-
-
-# 8. PERFORMANCE METRICS DASHBOARD
-st.subheader("🎯 Performance Metrics Dashboard")
-
-# Calculate advanced metrics
-performance_metrics = []
-for player in active_players:
-    player_stat = next((s for s in processed_stats if s["Player"] == player), None)
-    if not player_stat:
-        continue
-    
-    # Get player's history
-    player_history = elo_history[player]
-    if len(player_history) < 2:
-        continue
-    
-    elos = [r for m, r in player_history[1:]]  # Exclude initial rating
-    current_elo = ratings[player]
-    peak_elo = max(elos)
-    
-    # ELO volatility (consistency)
-    elo_std = np.std(elos) if len(elos) > 1 else 0
-    consistency_score = max(0, 100 - elo_std)  # Lower std = higher consistency
-    
-    # Biggest gain/loss
-    elo_changes = [elos[i] - elos[i-1] for i in range(1, len(elos))]
-    biggest_gain = max(elo_changes) if elo_changes else 0
-    biggest_loss = min(elo_changes) if elo_changes else 0
-    
-    # Giant killer stat (wins against higher-rated opponents)
-    giant_killer_wins = 0
-    total_underdog_matches = 0
-    for match in matches:
-        if match["player1"] == player:
-            opp = match["player2"]
-            # Check if this was an underdog win (opponent had higher ELO at time of match)
-            if opp in ratings and match["score1"] > match["score2"]:
-                # Simplified: use current ratings as proxy
-                if ratings[opp] > current_elo:
-                    giant_killer_wins += 1
-                    total_underdog_matches += 1
-            elif opp in ratings and match["score1"] < match["score2"]:
-                if ratings[opp] > current_elo:
-                    total_underdog_matches += 1
-        elif match["player2"] == player:
-            opp = match["player1"]
-            if opp in ratings and match["score2"] > match["score1"]:
-                if ratings[opp] > current_elo:
-                    giant_killer_wins += 1
-                    total_underdog_matches += 1
-            elif opp in ratings and match["score2"] < match["score1"]:
-                if ratings[opp] > current_elo:
-                    total_underdog_matches += 1
-    
-    underdog_rate = (giant_killer_wins / total_underdog_matches * 100) if total_underdog_matches > 0 else 0
-    
-    performance_metrics.append({
-        "Player": player,
-        "Current ELO": round(current_elo, 1),
-        "Peak ELO": round(peak_elo, 1),
-        "ELO vs Peak": round(current_elo - peak_elo, 1),
-        "Consistency": round(consistency_score, 1),
-        "Biggest Gain": f"+{biggest_gain:.1f}",
-        "Biggest Loss": f"{biggest_loss:.1f}",
-        "Underdog Wins": giant_killer_wins,
-        "Underdog Win %": round(underdog_rate, 1) if total_underdog_matches > 0 else "-"
-    })
-
-perf_df = pd.DataFrame(performance_metrics)
-
-# Display in tabs
-tab1, tab2, tab3 = st.tabs(["📊 All Metrics", "🏔️ Peak Performance", "🎯 Giant Killers"])
-
-with tab1:
-    st.dataframe(perf_df.sort_values("Current ELO", ascending=False), use_container_width=True)
-
-with tab2:
-    peak_df = perf_df[["Player", "Current ELO", "Peak ELO", "ELO vs Peak"]].sort_values("Peak ELO", ascending=False)
-    st.dataframe(peak_df, use_container_width=True)
-    
-    # Visualization
-    fig, ax = plt.subplots(figsize=(10, 6))
-    top_10_peak = peak_df.head(10)
-    x = np.arange(len(top_10_peak))
-    width = 0.35
-    
-    ax.bar(x - width/2, top_10_peak["Current ELO"], width, label='Current ELO', color='#2196F3', alpha=0.8)
-    ax.bar(x + width/2, top_10_peak["Peak ELO"], width, label='Peak ELO', color='#FFD700', alpha=0.8)
-    
-    ax.set_xlabel('Player', fontsize=10, fontweight='bold')
-    ax.set_ylabel('ELO Rating', fontsize=10, fontweight='bold')
-    ax.set_title('Current vs Peak ELO (Top 10)', fontsize=12, fontweight='bold')
-    ax.set_xticks(x)
-    ax.set_xticklabels(top_10_peak["Player"], rotation=45, ha='right')
-    ax.legend()
-    ax.grid(axis='y', alpha=0.3)
-    
-    # Dark mode
-    ax.set_facecolor('#1e1e1e')
-    fig.patch.set_facecolor('#1e1e1e')
-    ax.tick_params(colors='white')
-    ax.yaxis.label.set_color('white')
-    ax.xaxis.label.set_color('white')
-    ax.title.set_color('white')
-    ax.spines['bottom'].set_color('white')
-    ax.spines['left'].set_color('white')
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    legend = ax.legend()
-    legend.get_frame().set_facecolor('#2e2e2e')
-    for text in legend.get_texts():
-        text.set_color('white')
-    
-    plt.tight_layout()
-    st.pyplot(fig)
-
-with tab3:
-    giant_df = perf_df[perf_df["Underdog Wins"] > 0][["Player", "Underdog Wins", "Underdog Win %"]].sort_values("Underdog Wins", ascending=False)
-    if not giant_df.empty:
-        st.dataframe(giant_df, use_container_width=True)
-        st.info("🎯 'Giant Killers' are players who win against higher-rated opponents!")
-    else:
-        st.info("No underdog wins recorded yet!")
-
-
-st.markdown("""
-<hr style="border: none; height: 2px; background-color: #FF4B4B; margin: 20px 0;">
-""", unsafe_allow_html=True)
-
-
-# ============================================================
-# DOUBLES SECTIONS (MOVED TO BOTTOM)
-# ============================================================
-
-st.header("👯 Doubles Elo Ratings")
-
+# Doubles leaderboard
+st.subheader("🏆 Doubles ELO Rankings")
 doubles_data = [
-    {"Player": p, "Doubles Elo": r}
+    {"Player": p, "Doubles ELO": round(r, 1)}
     for p, r in doubles_ratings.items()
-    if len(doubles_history[p]) > 1
+    if len(doubles_history.get(p, [])) > 1
 ]
-
-df_doubles = pd.DataFrame(doubles_data)
-df_doubles = df_doubles.sort_values(by="Doubles Elo", ascending=False).reset_index(drop=True)
-
-if df_doubles.empty:
-    st.write("No doubles matches played yet.")
+if doubles_data:
+    df_d = pd.DataFrame(doubles_data).sort_values("Doubles ELO", ascending=False).reset_index(drop=True)
+    st.dataframe(df_d, use_container_width=True, hide_index=True)
 else:
-    st.dataframe(df_doubles.style.format({"Doubles Elo": "{:.2f}"}), use_container_width=True)
+    st.info("No doubles matches played yet.")
 
-
-
-# Determine max match number for doubles
-max_doubles_match_num = max(
-    [match_num for series in doubles_history.values() for match_num, _ in series]
-    or [0]  # fallback if empty
-)
-
-# Build extended and interpolated doubles Elo history
-doubles_graph_data = []
+# Doubles Elo history — build graph df
+max_dm = max((mn for series in doubles_history.values() for mn, _ in series), default=0)
+dbl_graph_data = []
 for player, series in doubles_history.items():
     if not series:
         continue
-
-    # Add match-by-match Elo, interpolating missed matches
-    for i in range(len(series)):
-        match_num, rating = series[i]
-        doubles_graph_data.append({
-            "Player": player,
-            "Match #": match_num,
-            "Doubles Elo": rating
-        })
-
-        # Interpolate Elo for skipped matches (flat line)
+    for i, (mn, rating) in enumerate(series):
+        dbl_graph_data.append({"Player": player, "Match #": mn, "Doubles ELO": rating})
         if i < len(series) - 1:
-            next_match_num, _ = series[i + 1]
-            for skipped_match in range(match_num + 1, next_match_num):
-                doubles_graph_data.append({
-                    "Player": player,
-                    "Match #": skipped_match,
-                    "Doubles Elo": rating
-                })
+            for s in range(mn + 1, series[i + 1][0]):
+                dbl_graph_data.append({"Player": player, "Match #": s, "Doubles ELO": rating})
+    last_mn, last_r = series[-1]
+    for extra in range(last_mn + 1, max_dm + 1):
+        dbl_graph_data.append({"Player": player, "Match #": extra, "Doubles ELO": last_r})
 
-    # Extend to latest match if needed
-    last_match_num, last_rating = series[-1]
-    for extra_match in range(last_match_num + 1, max_doubles_match_num + 1):
-        doubles_graph_data.append({
-            "Player": player,
-            "Match #": extra_match,
-            "Doubles Elo": last_rating
-        })
+if dbl_graph_data:
+    dbl_graph_df = pd.DataFrame(dbl_graph_data)
 
+    st.subheader("🔍 Doubles Elo History")
+    unique_dbl = sorted(dbl_graph_df["Player"].unique())
+    sel_dbl    = st.selectbox("Select a player:", unique_dbl, key="doubles_player_smooth")
 
-doubles_graph_df = pd.DataFrame(doubles_graph_data)
+    pdf = dbl_graph_df[dbl_graph_df["Player"] == sel_dbl].sort_values("Match #")
+    actual_dbl = pdf[pdf["Doubles ELO"] != pdf["Doubles ELO"].shift()].reset_index(drop=True)
+    actual_dbl["Player Match #"] = actual_dbl.index + 1
+    pdf = pdf.merge(actual_dbl[["Match #", "Player Match #"]], on="Match #", how="left")
+    pdf["Player Match #"] = pdf["Player Match #"].ffill()
 
-# Optional: Detailed Elo graph for a single player
-st.subheader("🔍 Doubles Elo History (One Player at a Time)")
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=pdf["Player Match #"], y=pdf["Doubles ELO"],
+        mode="lines",
+        line=dict(color=ACCENT, width=2.5),
+        hovertemplate="Match %{x}<br>ELO: %{y:.0f}<extra></extra>"
+    ))
+    _dbl_min = float(pdf["Doubles ELO"].min())
+    _dbl_max = float(pdf["Doubles ELO"].max())
+    _dbl_buf = max(15, (_dbl_max - _dbl_min) * 0.08)
+    fig.update_layout(
+        title=f"📈 Doubles Elo: {sel_dbl}",
+        xaxis_title="Match #", yaxis_title="Doubles ELO",
+        yaxis=dict(range=[_dbl_min - _dbl_buf, _dbl_max + _dbl_buf]),
+        template="plotly_dark"
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
-# Get unique players
-unique_doubles_players = sorted(doubles_graph_df["Player"].unique())
-selected_player = st.selectbox("Select a player to view their Elo trend:", unique_doubles_players, key="doubles_player_smooth")
+# Doubles stats
+st.subheader("📊 Doubles Player Stats")
+dbl_raw = defaultdict(lambda: {"Wins": 0, "Losses": 0, "Games": 0, "Points Won": 0, "Points Lost": 0, "Streak History": []})
+for m in doubles_matches:
+    t1, t2, s1, s2 = m["team1"], m["team2"], m["score1"], m["score2"]
+    winners = t1 if s1 > s2 else t2
+    losers  = t2 if s1 > s2 else t1
+    for p in winners:
+        dbl_raw[p]["Wins"] += 1;  dbl_raw[p]["Streak History"].append("W")
+    for p in losers:
+        dbl_raw[p]["Losses"] += 1;  dbl_raw[p]["Streak History"].append("L")
+    for p in t1 + t2:
+        dbl_raw[p]["Games"] += 1
+    for p in t1:
+        dbl_raw[p]["Points Won"] += s1;  dbl_raw[p]["Points Lost"] += s2
+    for p in t2:
+        dbl_raw[p]["Points Won"] += s2;  dbl_raw[p]["Points Lost"] += s1
 
-# Filter and sort player's data
-player_df = doubles_graph_df[doubles_graph_df["Player"] == selected_player].sort_values("Match #")
-
-# Create a new match number sequence just for this player's matches
-player_matches = player_df[player_df["Doubles Elo"] != player_df["Doubles Elo"].shift()]  # Get only actual matches
-player_matches = player_matches.reset_index(drop=True)
-player_matches["Player Match #"] = player_matches.index + 1
-
-# Merge the new match numbers back to the full sequence
-player_df = player_df.merge(
-    player_matches[["Match #", "Player Match #"]], 
-    on="Match #", 
-    how="left"
-)
-player_df["Player Match #"] = player_df["Player Match #"].ffill()
-
-# Apply LOESS smoothing
-smoothed = lowess(
-    exog=player_df["Player Match #"],
-    endog=player_df["Doubles Elo"],
-    frac=0.3  # adjust for more/less smoothing
-)
-
-# Plot smoothed Elo
-fig, ax = plt.subplots(figsize=(10, 4))
-
-ax.plot(
-    smoothed[:, 0],
-    smoothed[:, 1],
-    linewidth=2.5,
-    color="#67cfff",
-    label="Smoothed Elo Rating"
-)
-
-# Fill under the curve
-ax.fill_between(
-    smoothed[:, 0],
-    smoothed[:, 1],
-    alpha=0.2,
-    color="#67cfff"
-)
-
-# Style tweaks
-ax.set_title(f"📈 Elo Progress: {selected_player}", fontsize=16, weight="bold")
-ax.set_xlabel("Player's Match #", fontsize=12)  # Changed label to reflect player-specific matches
-ax.set_ylabel("Doubles Elo", fontsize=12)
-
-# Set x-axis to show only integer ticks
-ax.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
-
-# Dynamic Y-axis limits
-elo_min = smoothed[:, 1].min()
-elo_max = smoothed[:, 1].max()
-buffer = max(10, (elo_max - elo_min) * 0.1)
-ax.set_ylim(elo_min - buffer, elo_max + buffer)
-
-# Dark mode style
-ax.grid(alpha=0.3)
-ax.set_facecolor("#1e1e1e")
-fig.patch.set_facecolor("#1e1e1e")
-ax.tick_params(colors='white')
-ax.yaxis.label.set_color('white')
-ax.xaxis.label.set_color('white')
-ax.title.set_color('white')
-
-st.pyplot(fig)
-
-st.header("📊 Doubles Player Performance Stats")
-
-# Initialize doubles stat containers
-doubles_stats = defaultdict(lambda: {
-    "Wins": 0,
-    "Losses": 0,
-    "Games": 0,
-    "Points Won": 0,
-    "Points Lost": 0,
-    "Streak History": []
-})
-
-# Populate doubles stats
-for match in doubles_matches:
-    team1 = match["team1"]
-    team2 = match["team2"]
-    s1, s2 = match["score1"], match["score2"]
-
-    # Determine winner and loser
-    if s1 > s2:
-        winners = team1
-        losers = team2
-        w_score, l_score = s1, s2
-    else:
-        winners = team2
-        losers = team1
-        w_score, l_score = s2, s1
-
-    for player in winners:
-        doubles_stats[player]["Wins"] += 1
-        doubles_stats[player]["Streak History"].append("W")
-
-    for player in losers:
-        doubles_stats[player]["Losses"] += 1
-        doubles_stats[player]["Streak History"].append("L")
-
-    for player in team1 + team2:
-        doubles_stats[player]["Games"] += 1
-
-    for player in team1:
-        doubles_stats[player]["Points Won"] += s1
-        doubles_stats[player]["Points Lost"] += s2
-
-    for player in team2:
-        doubles_stats[player]["Points Won"] += s2
-        doubles_stats[player]["Points Lost"] += s1
-
-# Process stats
-processed_doubles_stats = []
-for player, data in doubles_stats.items():
+proc_dbl = []
+for player, data in dbl_raw.items():
     if player not in doubles_ratings:
         continue
-    total_matches = data["Wins"] + data["Losses"]
     games = data["Games"]
-    wins = data["Wins"]
-    losses = data["Losses"]
-    pw = data["Points Won"]
-    pl = data["Points Lost"]
-    history = data["Streak History"]
-
-    # Current streak
-    current_streak = ""
-    if history:
-        last = history[-1]
-        count = 0
-        for res in reversed(history):
-            if res == last:
-                count += 1
-            else:
-                break
-        current_streak = f"{count}{last}"
-
-    # Longest win/loss streak
-    def max_streak(seq, target):
-        max_count = count = 0
-        for res in seq:
-            if res == target:
-                count += 1
-                max_count = max(max_count, count)
-            else:
-                count = 0
-        return max_count
-
-    longest_w = max_streak(history, "W")
-    longest_l = max_streak(history, "L")
-
-    processed_doubles_stats.append({
-        "Player": player,
-        "Matches": total_matches,
-        "Wins": wins,
-        "Losses": losses,
-        "W/L %": round(wins / games * 100, 1) if games > 0 else 0,
-        "Current Streak": current_streak,
-        "Longest Win Streak": longest_w,
-        "Longest Loss Streak": longest_l,
-        "Avg Points Won": round(pw / games, 1) if games > 0 else 0,
-        "Avg Points Lost": round(pl / games, 1) if games > 0 else 0,
+    wins  = data["Wins"]
+    seq   = data["Streak History"]
+    streak = ""
+    if seq:
+        last = seq[-1]; cnt = 0
+        for r in reversed(seq):
+            if r == last: cnt += 1
+            else:         break
+        streak = f"{cnt}{last}"
+    proc_dbl.append({
+        "Player":              player,
+        "Matches":             games,
+        "Wins":                wins,
+        "Losses":              data["Losses"],
+        "W/L %":               round(wins / games * 100, 1) if games else 0,
+        "Current Streak":      streak,
+        "Longest Win Streak":  max_streak(seq, "W"),
+        "Longest Loss Streak": max_streak(seq, "L"),
+        "Avg Pts Won":         round(data["Points Won"]  / games, 1) if games else 0,
+        "Avg Pts Lost":        round(data["Points Lost"] / games, 1) if games else 0,
     })
 
-# Display
-doubles_stats_df = pd.DataFrame(processed_doubles_stats)
-doubles_stats_df = doubles_stats_df.sort_values("Wins", ascending=False).reset_index(drop=True)
-st.dataframe(doubles_stats_df, use_container_width=True)
+if proc_dbl:
+    dbl_stats_df = pd.DataFrame(proc_dbl).sort_values("Wins", ascending=False).reset_index(drop=True)
+    st.dataframe(dbl_stats_df, use_container_width=True, hide_index=True)
 
-
-# 🤝 Doubles Partnership Insights
+# Doubles partner synergy
 st.header("🤝 Doubles Partner Synergy & Matchup Stats")
+partner_stats  = defaultdict(lambda: defaultdict(lambda: {"matches": 0, "wins": 0}))
+matchup_stats  = defaultdict(lambda: defaultdict(lambda: {"wins": 0, "losses": 0, "total": 0}))
 
-# Track partner stats
-partner_stats = defaultdict(lambda: defaultdict(lambda: {"matches": 0, "wins": 0}))
-matchup_stats = defaultdict(lambda: defaultdict(lambda: {"wins": 0, "losses": 0, "total": 0}))
-
-# Process match data
-for match in doubles_matches:
-    t1, t2 = match["team1"], match["team2"]
-    s1, s2 = match["score1"], match["score2"]
-
-    if s1 > s2:
-        winning_team = t1
-        losing_team = t2
-    else:
-        winning_team = t2
-        losing_team = t1
-
-    # Partner stats
+for m in doubles_matches:
+    t1, t2, s1, s2 = m["team1"], m["team2"], m["score1"], m["score2"]
+    winning_team = t1 if s1 > s2 else t2
     for team in [t1, t2]:
-        for p1 in team:
-            for p2 in team:
-                if p1 != p2:
-                    partner_stats[p1][p2]["matches"] += 1
+        for pa in team:
+            for pb in team:
+                if pa != pb:
+                    partner_stats[pa][pb]["matches"] += 1
                     if team == winning_team:
-                        partner_stats[p1][p2]["wins"] += 1
-
-    # Matchup stats
-    team1_key = " & ".join(sorted(t1))
-    team2_key = " & ".join(sorted(t2))
+                        partner_stats[pa][pb]["wins"] += 1
+    k1 = " & ".join(sorted(t1))
+    k2 = " & ".join(sorted(t2))
     if s1 > s2:
-        matchup_stats[team1_key][team2_key]["wins"] += 1
-        matchup_stats[team1_key][team2_key]["total"] += 1
-        matchup_stats[team2_key][team1_key]["losses"] += 1
-        matchup_stats[team2_key][team1_key]["total"] += 1
+        matchup_stats[k1][k2]["wins"]   += 1;  matchup_stats[k1][k2]["total"] += 1
+        matchup_stats[k2][k1]["losses"] += 1;  matchup_stats[k2][k1]["total"] += 1
     else:
-        matchup_stats[team2_key][team1_key]["wins"] += 1
-        matchup_stats[team2_key][team1_key]["total"] += 1
-        matchup_stats[team1_key][team2_key]["losses"] += 1
-        matchup_stats[team1_key][team2_key]["total"] += 1
+        matchup_stats[k2][k1]["wins"]   += 1;  matchup_stats[k2][k1]["total"] += 1
+        matchup_stats[k1][k2]["losses"] += 1;  matchup_stats[k1][k2]["total"] += 1
 
-# Best Partner Table
-best_partner_data = []
+bp_rows = []
 for player, partners in partner_stats.items():
-    best = max(partners.items(), key=lambda x: x[1]["wins"], default=(None, {"wins": 0}))
-    best_partner, stats = best
-    total = stats["matches"]
-    wins = stats["wins"]
-    win_pct = round(100 * wins / total, 1) if total > 0 else 0
-    best_partner_data.append({
-        "Player": player,
-        "Best Partner": best_partner,
-        "Matches Together": total,
-        "Wins Together": wins,
-        "Win %": win_pct
-    })
+    best_p, best_s = max(partners.items(), key=lambda x: x[1]["wins"], default=(None, {"wins": 0, "matches": 0}))
+    if best_p:
+        total = best_s["matches"]
+        wins  = best_s["wins"]
+        bp_rows.append({
+            "Player":          player,
+            "Best Partner":    best_p,
+            "Matches Together": total,
+            "Wins Together":   wins,
+            "Win %":           round(100 * wins / total, 1) if total else 0,
+        })
 
-best_partner_df = pd.DataFrame(best_partner_data).sort_values(by="Win %", ascending=False)
-st.subheader("🏅 Best Doubles Partner (by Win %)")
-st.dataframe(best_partner_df, use_container_width=True)
+st.subheader("🏅 Best Doubles Partner")
+if bp_rows:
+    st.dataframe(pd.DataFrame(bp_rows).sort_values("Win %", ascending=False), use_container_width=True, hide_index=True)
 
-# Matchup Stats Table
-matchup_data = []
-for team1, opponents in matchup_stats.items():
-    for team2, stats in opponents.items():
-        if team1 < team2:  # avoid duplicate reverse entries
-            matchup_data.append({
-                "Team 1": team1,
-                "Team 2": team2,
-                "Wins": stats["wins"],
-                "Losses": stats["losses"],
-                "Total Matches": stats["total"],
-                "Win %": round(100 * stats["wins"] / stats["total"], 1) if stats["total"] > 0 else 0
+mu_rows = []
+for k1, opps in matchup_stats.items():
+    for k2, ms in opps.items():
+        if k1 < k2:
+            mu_rows.append({
+                "Team 1": k1, "Team 2": k2,
+                "Wins": ms["wins"], "Losses": ms["losses"],
+                "Total": ms["total"],
+                "Win %": round(100 * ms["wins"] / ms["total"], 1) if ms["total"] else 0,
             })
 
-matchup_df = pd.DataFrame(matchup_data).sort_values(by="Total Matches", ascending=False)
-
 st.subheader("🏓 Doubles Matchup Records")
-st.dataframe(matchup_df, use_container_width=True)
+if mu_rows:
+    st.dataframe(
+        pd.DataFrame(mu_rows).sort_values("Total", ascending=False),
+        use_container_width=True, hide_index=True
+    )
 
-# 📜 Doubles Match History
 with st.expander("📜 Doubles Match History", expanded=False):
-    st.markdown("## 📜 Doubles Match History")
-    if not doubles_matches:
-        st.write("No doubles matches yet.")
+    if doubles_matches:
+        dbl_mdf = pd.DataFrame([{
+            "Date":    m["date"],
+            "Team 1":  " + ".join(m["team1"]),
+            "Score 1": m["score1"],
+            "Score 2": m["score2"],
+            "Team 2":  " + ".join(m["team2"]),
+        } for m in doubles_matches])
+        st.dataframe(dbl_mdf[::-1], use_container_width=True)
     else:
-        doubles_match_df = pd.DataFrame([
-            {
-                "Date": match["date"],
-                "Team 1": " + ".join(match["team1"]),
-                "Score 1": match["score1"],
-                "Score 2": match["score2"],
-                "Team 2": " + ".join(match["team2"]),
-            }
-            for match in doubles_matches
-        ])
-        st.dataframe(doubles_match_df[::-1], use_container_width=True)
-
+        st.write("No doubles matches yet.")
 
 with st.expander("🧑‍🤝‍🧑 Club Members", expanded=False):
-    st.markdown("## 🧑‍🤝‍🧑 Club Members")
-    # All registered players
-    all_players = sorted(load_players())  # from input file
-    rated_players = active_players       # already computed
-    unrated_players = set(all_players) - rated_players
-    
-    # Build display DataFrame
-    members_df = pd.DataFrame([
-        {
-            "Player": player,
-            "Status": "🟢 Rated" if player in rated_players else "⚪ Unrated"
-        }
-        for player in all_players
-    ])
-    
-    # Show table
-    st.dataframe(members_df, use_container_width=True)
+    members_df = pd.DataFrame([{
+        "Player": p,
+        "Status": "🟢 Rated" if p in active_players else "⚪ Unrated"
+    } for p in all_registered])
+    st.dataframe(members_df, use_container_width=True, hide_index=True)
